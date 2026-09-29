@@ -10,16 +10,18 @@ function App() {
       className="page-wrap min-h-screen bg-cover bg-center bg-fixed px-4 pb-8 pt-14"
       style={{ backgroundImage: `url(${backgroundPicture})` }}
     >
-      <section className="island-shell rise-in relative overflow-hidden rounded-[2rem] px-6 py-10 sm:px-10 sm:py-14">
-        <div className="pointer-events-none absolute -left-20 -top-24 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(79,184,178,0.32),transparent_66%)]" />
-        <div className="pointer-events-none absolute -bottom-20 -right-20 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(47,106,74,0.18),transparent_66%)]" />
-        <p className="island-kicker mb-3">TanStack Start Base Template</p>
-        <h1 className="display-title mb-5 max-w-3xl text-4xl leading-[1.02] font-bold tracking-tight text-[var(--sea-ink)] sm:text-5xl">
-          PowerGrid lovers. Energy to all 
+      <section className=" rise-in relative overflow-hidden rounded-[2rem] px-6 py-10 sm:px-10 sm:py-14">
+        
+        <h1 className="display-title mb-5 max-w-3xl text-center text-4xl leading-[1.02] font-bold tracking-tight text-white sm:text-5xl">
+          Every hour
+        </h1>   
+        <h1 className="display-title mb-5 max-w-3xl text-center text-4xl leading-[1.02] font-bold tracking-tight text-[var(--sea-ink)] sm:text-5xl bg-gradient-to-r from-teal-600 via-cyan-400 to-slate-50 bg-clip-text text-transparent">
+          can be Earth Hour. 
         </h1>
-        <p className="mb-8 max-w-2xl text-base text-[var(--sea-ink-soft)] sm:text-lg">
-          This base starter intentionally keeps things light: two routes, clean
-          structure, and the essentials you need to build from scratch.
+        <p className="mb-8 max-w-2xl text-center text-gray-400 sm:text-lg">
+          Our Project watches the electricity grid so you don't have to. 
+          Know the exact hour to run your washing machine, dishwasher, or charge your car. 
+          When energy is cheapest and cleanest. 
         </p>
         <div className="flex flex-wrap gap-3">
           <a
