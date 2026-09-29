@@ -5,6 +5,7 @@ export const Route = createFileRoute('/')({ component: App })
 
 function App() {
   return (
+    <div style= {{ backgroundImage: `url(${backgroundPicture})` }}> 
     <main
       className="page-wrap min-h-screen bg-cover bg-center bg-fixed px-4 pb-8 pt-14"
       style={{ backgroundImage: `url(${backgroundPicture})` }}
@@ -87,5 +88,6 @@ function App() {
         </ul>
       </section>
     </main>
+    </div>
   )
 }
