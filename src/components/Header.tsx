@@ -38,12 +38,12 @@ export default function Header() {
             target="_blank"
             rel="noreferrer"
           >
-            Docs
+            Info
           </a>
         </div>
 
         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-          <a
+          {/* <a
             href="https://x.com/tan_stack"
             target="_blank"
             rel="noreferrer"
@@ -56,9 +56,9 @@ export default function Header() {
                 d="M12.6 1h2.2L10 6.48 15.64 15h-4.41L7.78 9.82 3.23 15H1l5.14-5.84L.72 1h4.52l3.12 4.73L12.6 1zm-.77 12.67h1.22L4.57 2.26H3.26l8.57 11.41z"
               />
             </svg>
-          </a>
+          </a> */}
           <a
-            href="https://github.com/TanStack"
+            href="https://github.com/EricaMelodi/Agile_project"
             target="_blank"
             rel="noreferrer"
             className="hidden rounded-xl p-2 text-[var(--sea-ink-soft)] transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--sea-ink)] sm:block"
@@ -72,9 +72,9 @@ export default function Header() {
             </svg>
           </a>
 
-          <ThemeToggle />
+          {/* <ThemeToggle /> */}
         </div>
-      </nav>
-    </header>
+      </nav >
+    </header >
   )
 }
