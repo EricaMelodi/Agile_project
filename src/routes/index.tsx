@@ -35,7 +35,7 @@ function App() {
           </div>
         </section>
 
-        <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
             [
               'Type-Safe Routing',
@@ -65,9 +65,9 @@ function App() {
               <p className="m-0 text-sm text-[var(--sea-ink-soft)]">{desc}</p>
             </article>
           ))}
-        </section>
+        </section> */}
 
-        <section className="island-shell mt-8 rounded-2xl p-6">
+        {/* <section className="island-shell mt-8 rounded-2xl p-6">
           <p className="island-kicker mb-2">Quick Start</p>
           <ul className="m-0 list-disc space-y-2 pl-5 text-sm text-[var(--sea-ink-soft)]">
             <li>
@@ -82,7 +82,7 @@ function App() {
               <code>src/styles.css</code>.
             </li>
           </ul>
-        </section>
+        </section> */}
       </main>
     </div>
   )
