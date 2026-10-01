@@ -32,14 +32,6 @@ function App() {
               <span aria-hidden="true">&rarr;</span>
             </a>
 
-            <a
-              href="https://tanstack.com/router"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-full border border-slate-700 bg-slate-900/40 px-6 py-3 text-sm font-semibold text-slate-300 transition hover:border-slate-500 hover:text-white"
-            >
-              About us
-            </a>
           </div>
         </section>
 

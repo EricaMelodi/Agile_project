@@ -78,7 +78,7 @@ import { Link } from "@tanstack/react-router";
 Then anywhere in your JSX you can use it like so:
 
 ```tsx
-<Link to="/about">About</Link>
+<Link to="/about">About us</Link>
 ```
 
 This will create a link that will navigate to the `/about` route.
