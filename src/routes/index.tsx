@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import backgroundPicture from '../assets/BackgroundPic.jpeg'
 
 export const Route = createFileRoute('/')({ component: App })
@@ -24,13 +24,13 @@ function App() {
             When energy is cheapest and cleanest.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
-            <a
-              href="/about"
+            <Link
+              to="/grid"
               className="inline-flex items-center gap-2 rounded-full bg-cyan-400 px-6 py-3 text-sm font-bold text-black shadow-[0_0_20px_rgba(34,211,238,0.3)] transition hover:bg-cyan-300"
             >
               See Today's Grid
               <span aria-hidden="true">&rarr;</span>
-            </a>
+            </Link>
 
           </div>
         </section>

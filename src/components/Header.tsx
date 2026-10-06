@@ -36,6 +36,14 @@ export default function Header() {
             About us
           </Link>
 
+          <Link
+            to="/grid"
+            className="nav-link"
+            activeProps={{ className: 'nav-link is-active' }}
+          >
+            Today's grid
+          </Link>
+
           <a
             href="https://tanstack.com/start/latest/docs/framework/react/overview"
             className="nav-link"
