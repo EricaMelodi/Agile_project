@@ -12,7 +12,7 @@ function Grid() {
       <section className="rise-in mx-auto flex min-h-[31rem] max-w-3xl flex-col items-center justify-center rounded-[2rem] px-6 py-12 text-center sm:px-10">
         <p className="island-kicker mb-4 text-white">Today's grid</p>
         <h1 className="display-title mb-4 max-w-2xl text-4xl font-bold leading-[1.05] tracking-tight text-white sm:text-6xl">
-          Find the best energy prices right now.
+          Find the prices at your location right now.
         </h1>
 
         <label className="w-full max-w-xl text-left">
