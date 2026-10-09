@@ -1,3 +1,8 @@
+namespace ElectricitySavingApp.Controller;
+
+using ElectricitySavingApp.Services;
+using ElectricitySavingApp.Model;
+
 
 public static class CarbonIntensityEndpoints
 {
@@ -19,7 +24,7 @@ public static class CarbonIntensityEndpoints
                 );
             }
 
-            CarbonIntensity? carbonIntensityResult = 
+            CarbonIntensityEntry? carbonIntensityResult = 
                 await carbonIntensityService.GetCarbonIntensity(formattedPriceArea);
 
                 return carbonIntensityResult is null ? Results.NotFound("Carbon intensity unvailable")

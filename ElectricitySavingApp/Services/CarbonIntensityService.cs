@@ -1,4 +1,6 @@
-using System.Net.Http.Json; // Used to deserialize JSON from the API response.
+namespace ElectricitySavingApp.Services;
+
+using ElectricitySavingApp.Model;
 
 // Retrieves current carbon intensity from Electricity Maps API.
 public class CarbonIntensityService : ICarbonIntensityService
@@ -17,14 +19,14 @@ public class CarbonIntensityService : ICarbonIntensityService
 
 
     // Retrieves the current carbon intensity for the specified price area.
-    public async Task<CarbonIntensity?> GetCarbonIntensity(string priceArea)
+    public async Task<CarbonIntensityEntry?> GetCarbonIntensity(string priceArea)
     {
         // Builds the URL for the API request and escapes the price area to ensure it's safe for use in a URL.
         string apiRequestUrl =
             $"v4/carbon-intensity/latest?zone=SE-{Uri.EscapeDataString(priceArea)}";
 
         // Sends the request to the API and deserializes the JSON response into a carbonIntensityResult object.
-        CarbonIntensity? carbonIntensityResult = await httpClient.GetFromJsonAsync<CarbonIntensity>(apiRequestUrl);
+        CarbonIntensityEntry? carbonIntensityResult = await httpClient.GetFromJsonAsync<CarbonIntensityEntry>(apiRequestUrl);
 
         return carbonIntensityResult;
     }

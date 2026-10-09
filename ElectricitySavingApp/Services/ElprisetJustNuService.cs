@@ -1,4 +1,6 @@
-using System.Net.Http.Json; // Used to deserialize JSON from the API response.
+namespace ElectricitySavingApp.Services;
+
+using ElectricitySavingApp.Model;
 
 // Fetches price data from the ElprisetJustNu API and maps it to PriceEntry objects.
 public class ElprisetJustNuService : IElectricityPriceService
@@ -16,12 +18,12 @@ public class ElprisetJustNuService : IElectricityPriceService
     public async Task<List<PriceEntry>> GetElectricityPrices(UserInput userInput)
     {
         string apiRequestUrl = "api/v1/prices/" +
-                        $"{userInput.Year}/{userInput.Month:D2}-{userInput.Day:D2}_{userInput.PriceArea}.json";
+                        $"{userInput.Year:D4}/{userInput.Month:D2}-{userInput.Day:D2}_{userInput.PriceArea}.json";
 
         // Sends the request to the API and deserializes the JSON response into a list of PriceEntry objects.
         List<PriceEntry>? prices = await httpClient.GetFromJsonAsync<List<PriceEntry>>(apiRequestUrl);
 
-        // Returns the list of prices or an empty list if the response was null.
+        // Returns the list of prices or a new empty list if the response was null.
         return prices ?? new List<PriceEntry>();
     }
 }

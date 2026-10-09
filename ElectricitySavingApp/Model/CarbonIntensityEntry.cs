@@ -1,7 +1,9 @@
+namespace ElectricitySavingApp.Model;
+
 using System.Text.Json.Serialization; // Used to map JSON properties to C# properties.
 
 // Represents the carbon intensity data returned by the Electricity Maps API.
-public class CarbonIntensity
+public class CarbonIntensityEntry
 {   
     // Maps the JSON property "zone" to the C# property "Zone".
     [JsonPropertyName("zone")]

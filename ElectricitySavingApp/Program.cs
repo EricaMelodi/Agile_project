@@ -1,4 +1,7 @@
 
+using ElectricitySavingApp.Services;
+using ElectricitySavingApp.Controller;
+
 WebApplicationBuilder builder = WebApplication.CreateBuilder();
 
 builder.Services.AddHttpClient<IElectricityPriceService, ElprisetJustNuService>(

@@ -1,3 +1,8 @@
+namespace ElectricitySavingApp.Controller;
+
+using ElectricitySavingApp.Services;
+using ElectricitySavingApp.Model;
+
 // Defines the URL endpoints for retrieving electricity prices.
 public static class PriceEndpoints
 {
@@ -19,7 +24,7 @@ public static class PriceEndpoints
             if (formatedPriceArea is not ("SE1" or "SE2" or "SE3" or "SE4"))
             {
                 return Results.BadRequest(
-                    "Price area must be on these: SE1, SE2, SE3, OR SE4"
+                    "Price area must be one of these: SE1, SE2, SE3, or SE4"
                 );
             }
 

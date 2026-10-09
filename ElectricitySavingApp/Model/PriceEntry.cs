@@ -1,4 +1,7 @@
+namespace ElectricitySavingApp.Model;
+
 using System.Text.Json.Serialization; // Needed to map JSON field names to C# properties.
+
 
 // Represents one electricity price entry returned by the API.
 public class PriceEntry
@@ -11,7 +14,7 @@ public class PriceEntry
     [JsonPropertyName("SEK_per_kWh")]
     public decimal SekPerkWh { get; set; }
 
-    // Stores the price area like SE1 or SE3.
+    // Maps the JSON field "price_area" to the PriceArea property.
     [JsonPropertyName("price_area")]
     public string? PriceArea { get; set; }
 }

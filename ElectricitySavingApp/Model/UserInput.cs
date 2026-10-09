@@ -1,3 +1,4 @@
+namespace ElectricitySavingApp.Model;
 
 // Represents the selected date and electricity price area.
 public class UserInput
