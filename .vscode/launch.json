@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": ".NET Launch ElectricitySavingApp",
+      "type": "coreclr",
+      "request": "launch",
+      "program": "${workspaceFolder}/ElectricitySavingApp/bin/Debug/net10.0/ElectricitySavingApp.dll",
+      "cwd": "${workspaceFolder}/ElectricitySavingApp",
+      "preLaunchTask": "build ElectricitySavingApp",
+      "console": "integratedTerminal",
+      "stopAtEntry": false
+    }
+  ]
+}

@@ -44,14 +44,13 @@ export default function Header() {
             Today's grid
           </Link>
 
-          <a
-            href="https://tanstack.com/start/latest/docs/framework/react/overview"
+          <Link
+            to="/info"
             className="nav-link"
-            target="_blank"
-            rel="noreferrer"
+            activeProps={{ className: 'nav-link is-active' }}
           >
             Info
-          </a>
+          </Link>
         </div>
 
         {/* GitHub */}

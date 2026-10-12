@@ -12,7 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as GridRouteImport } from './routes/grid'
+<<<<<<< HEAD
 import { Route as ApiAddressSearchRouteImport } from './routes/api/address-search'
+=======
+import { Route as InfoRouteImport } from './routes/info'
+>>>>>>> 737cfe1d49048ce5c38e66554b59d2d14e9580b1
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -29,9 +33,15 @@ const GridRoute = GridRouteImport.update({
   path: '/grid',
   getParentRoute: () => rootRouteImport,
 } as any)
+<<<<<<< HEAD
 const ApiAddressSearchRoute = ApiAddressSearchRouteImport.update({
   id: '/api/address-search',
   path: '/api/address-search',
+=======
+const InfoRoute = InfoRouteImport.update({
+  id: '/info',
+  path: '/info',
+>>>>>>> 737cfe1d49048ce5c38e66554b59d2d14e9580b1
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -39,19 +49,28 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/grid': typeof GridRoute
+<<<<<<< HEAD
   '/api/address-search': typeof ApiAddressSearchRoute
+=======
+  '/info': typeof InfoRoute
+>>>>>>> 737cfe1d49048ce5c38e66554b59d2d14e9580b1
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/grid': typeof GridRoute
+<<<<<<< HEAD
   '/api/address-search': typeof ApiAddressSearchRoute
+=======
+  '/info': typeof InfoRoute
+>>>>>>> 737cfe1d49048ce5c38e66554b59d2d14e9580b1
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/grid': typeof GridRoute
+<<<<<<< HEAD
   '/api/address-search': typeof ApiAddressSearchRoute
 }
 export interface FileRouteTypes {
@@ -60,13 +79,27 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/about' | '/grid' | '/api/address-search'
   id: '__root__' | '/' | '/about' | '/grid' | '/api/address-search'
+=======
+  '/info': typeof InfoRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths: '/' | '/about' | '/grid' | '/info'
+  fileRoutesByTo: FileRoutesByTo
+  to: '/' | '/about' | '/grid' | '/info'
+  id: '__root__' | '/' | '/about' | '/grid' | '/info'
+>>>>>>> 737cfe1d49048ce5c38e66554b59d2d14e9580b1
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   GridRoute: typeof GridRoute
+<<<<<<< HEAD
   ApiAddressSearchRoute: typeof ApiAddressSearchRoute
+=======
+  InfoRoute: typeof InfoRoute
+>>>>>>> 737cfe1d49048ce5c38e66554b59d2d14e9580b1
 }
 
 declare module '@tanstack/react-router' {
@@ -92,11 +125,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GridRouteImport
       parentRoute: typeof rootRouteImport
     }
+<<<<<<< HEAD
     '/api/address-search': {
       id: '/api/address-search'
       path: '/api/address-search'
       fullPath: '/api/address-search'
       preLoaderRoute: typeof ApiAddressSearchRouteImport
+=======
+    '/info': {
+      id: '/info'
+      path: '/info'
+      fullPath: '/info'
+      preLoaderRoute: typeof InfoRouteImport
+>>>>>>> 737cfe1d49048ce5c38e66554b59d2d14e9580b1
       parentRoute: typeof rootRouteImport
     }
   }
@@ -106,7 +147,11 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   GridRoute: GridRoute,
+<<<<<<< HEAD
   ApiAddressSearchRoute: ApiAddressSearchRoute,
+=======
+  InfoRoute: InfoRoute,
+>>>>>>> 737cfe1d49048ce5c38e66554b59d2d14e9580b1
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

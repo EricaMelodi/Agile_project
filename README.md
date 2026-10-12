@@ -1,3 +1,21 @@
+# Electricity Saving App
+
+The app displays electricity prices and, when configured, the latest grid carbon
+intensity for SE1-SE4 using Electricity Maps.
+
+## Carbon intensity setup
+
+Create an Electricity Maps API key and set it as an environment variable before
+starting the app:
+
+```powershell
+$env:ELECTRICITY_MAPS_API_KEY = "your-api-key"
+dotnet run --project .\ElectricitySavingApp\ElectricitySavingApp.csproj
+```
+
+The application sends the selected price area (`SE1`, `SE2`, `SE3`, or `SE4`) to
+the Electricity Maps latest carbon-intensity endpoint. The API key is read from
+the environment and is not stored in the project.
 Welcome to your new TanStack Start app!
 
 # Getting Started
