@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as GridRouteImport } from './routes/grid'
+import { Route as ApiAddressSearchRouteImport } from './routes/api/address-search'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,35 +29,44 @@ const GridRoute = GridRouteImport.update({
   path: '/grid',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAddressSearchRoute = ApiAddressSearchRouteImport.update({
+  id: '/api/address-search',
+  path: '/api/address-search',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/grid': typeof GridRoute
+  '/api/address-search': typeof ApiAddressSearchRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/grid': typeof GridRoute
+  '/api/address-search': typeof ApiAddressSearchRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/grid': typeof GridRoute
+  '/api/address-search': typeof ApiAddressSearchRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/grid'
+  fullPaths: '/' | '/about' | '/grid' | '/api/address-search'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/grid'
-  id: '__root__' | '/' | '/about' | '/grid'
+  to: '/' | '/about' | '/grid' | '/api/address-search'
+  id: '__root__' | '/' | '/about' | '/grid' | '/api/address-search'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   GridRoute: typeof GridRoute
+  ApiAddressSearchRoute: typeof ApiAddressSearchRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -82,6 +92,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GridRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/address-search': {
+      id: '/api/address-search'
+      path: '/api/address-search'
+      fullPath: '/api/address-search'
+      preLoaderRoute: typeof ApiAddressSearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -89,6 +106,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   GridRoute: GridRoute,
+  ApiAddressSearchRoute: ApiAddressSearchRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
