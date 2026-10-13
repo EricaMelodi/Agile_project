@@ -1,228 +1,271 @@
 # Electricity Saving App
 
-The app displays electricity prices and, when configured, the latest grid carbon
-intensity for SE1-SE4 using Electricity Maps.
+The Electricity Saving App helps users find the electricity price and latest
+grid carbon intensity for their location in Sweden.
 
-## Carbon intensity setup
+The project contains two applications:
 
-Create an Electricity Maps API key and set it as an environment variable before
-starting the app:
+- `ElectricitySavingApp`: ASP.NET Core backend written in C#.
+- `src`: React and TanStack frontend.
+
+## Backend Architecture
+
+The backend follows this flow:
+
+```text
+Address
+  -> latitude and longitude
+  -> electricity zone (SE1-SE4)
+  -> today's price intervals
+  -> current local price
+  -> latest carbon intensity
+```
+
+The backend communicates with four external services:
+
+| Service | Purpose |
+| --- | --- |
+| `geocode.maps.co` | Converts an address into coordinates. |
+| `electricity-spot.com` | Provides GeoJSON electricity-zone boundaries. |
+| `elprisetjustnu.se` | Provides Swedish electricity prices. |
+| Electricity Maps | Provides latest carbon intensity. |
+
+The browser should call the backend rather than calling these providers
+directly. This keeps API keys on the server and keeps the application logic in
+one place.
+
+## Backend Structure
+
+```text
+ElectricitySavingApp/
+  Controller/
+    EnergyEndpoints.cs
+    GeoLocationEndpoints.cs
+    PriceEndpoints.cs
+    CarbonIntensityEndpoints.cs
+  Model/
+    GeoEntry.cs
+    PriceEntry.cs
+    CarbonIntensityEntry.cs
+    UserInput.cs
+    Zone.cs
+  Services/
+    GeoCodeService.cs
+    ZoneFinder.cs
+    ElprisetJustNuService.cs
+    CarbonIntensityService.cs
+    UnconfiguredCarbonIntensityService.cs
+```
+
+`Program.cs` configures HTTP clients, dependency injection, CORS, and endpoint
+registration.
+
+Interfaces such as `IGeoCodeService` and `IElectricityPriceService` define
+service contracts. The concrete service classes implement those contracts.
+
+Models describe the JSON data exchanged with external APIs and with the
+frontend.
+
+## Configuration
+
+The geocoding API key is required:
 
 ```powershell
-$env:ELECTRICITY_MAPS_API_KEY = "your-api-key"
+$env:GEO_CODING_API_KEY = "your-geocoding-api-key"
+```
+
+The Electricity Maps key enables carbon-intensity data:
+
+```powershell
+$env:ELECTRICITY_MAPS_API_KEY = "your-electricity-maps-api-key"
+```
+
+Keys are read from environment variables and should not be committed to Git.
+Without `ELECTRICITY_MAPS_API_KEY`, prices still work, but carbon intensity is
+returned as `null`.
+
+## Running the Backend
+
+From the repository root:
+
+```powershell
+dotnet build .\ElectricitySavingApp\ElectricitySavingApp.csproj
 dotnet run --project .\ElectricitySavingApp\ElectricitySavingApp.csproj
 ```
 
-The application sends the selected price area (`SE1`, `SE2`, `SE3`, or `SE4`) to
-the Electricity Maps latest carbon-intensity endpoint. The API key is read from
-the environment and is not stored in the project.
-Welcome to your new TanStack Start app!
+The terminal prints the address where the API is listening, commonly:
 
-# Getting Started
+```text
+http://localhost:5000
+```
 
-To run this application:
+Use the URL printed by `dotnet run` if a different port is selected.
 
-```bash
+## Main API Endpoint
+
+### Current energy data
+
+```text
+GET /api/current-energy?address={address}
+```
+
+Example PowerShell request:
+
+```powershell
+$address = [uri]::EscapeDataString("Drottninggatan 1, Gothenburg")
+Invoke-RestMethod "http://localhost:5000/api/current-energy?address=$address"
+```
+
+This endpoint:
+
+1. Sends the address to the geocoding service.
+2. Finds the electricity zone using the returned coordinates.
+3. Normalizes provider values such as `SE_3` to `SE3`.
+4. Converts the current UTC time to Swedish local time.
+5. Requests that day's prices for the resolved zone.
+6. Selects the price interval containing the current time.
+7. Requests the latest carbon intensity for the same zone.
+
+Example response:
+
+```json
+{
+  "address": "Drottninggatan 1, Gothenburg",
+  "zone": "SE3",
+  "latitude": 57.7046969,
+  "longitude": 11.9616709,
+  "localTime": "2026-10-14T14:30:00+02:00",
+  "price": {
+    "timeStart": "2026-10-14T14:15:00+02:00",
+    "sekPerkWh": 0.85,
+    "priceArea": "SE3"
+  },
+  "carbonIntensity": {
+    "carbonIntensityValue": 42,
+    "carbonIntensityUnit": "gCO2eq/kWh",
+    "isEstimated": false
+  }
+}
+```
+
+Possible responses:
+
+| Status | Meaning |
+| --- | --- |
+| `200 OK` | Energy data was found. |
+| `400 Bad Request` | The address or zone is invalid or unsupported. |
+| `404 Not Found` | The address or current price was not found. |
+
+## Other API Endpoints
+
+### Coordinates for an address
+
+```text
+GET /search?address={address}
+```
+
+Returns the latitude and longitude found by the geocoder.
+
+### Electricity zone for an address
+
+```text
+GET /search/zone?address={address}
+```
+
+Returns the address, coordinates, and normalized electricity zone.
+
+### Prices for a date and zone
+
+```text
+GET /api/prices?year=2026&month=10&day=14&priceArea=SE3
+```
+
+Returns all price intervals for that date and price area.
+
+### Latest carbon intensity
+
+```text
+GET /api/carbon-intensity?priceArea=SE3
+```
+
+Returns the latest carbon-intensity measurement for the area.
+
+## Testing with PowerShell
+
+Test geocoding:
+
+```powershell
+$address = [uri]::EscapeDataString("Drottninggatan 1, Gothenburg")
+Invoke-RestMethod "http://localhost:5000/search?address=$address"
+```
+
+Test zone detection:
+
+```powershell
+Invoke-RestMethod "http://localhost:5000/search/zone?address=$address"
+```
+
+Test prices:
+
+```powershell
+Invoke-RestMethod "http://localhost:5000/api/prices?year=2026&month=10&day=14&priceArea=SE3"
+```
+
+Test invalid input:
+
+```powershell
+Invoke-WebRequest `
+  "http://localhost:5000/api/current-energy?address=" `
+  -UseBasicParsing
+```
+
+The invalid request should return `400 Bad Request`.
+
+## Frontend
+
+Install dependencies and start the TanStack frontend:
+
+```powershell
 npm install
 npm run dev
 ```
 
-# Building For Production
+The frontend normally runs on:
 
-To build this application for production:
+```text
+http://localhost:3000
+```
 
-```bash
+The backend allows requests from this origin through its CORS policy.
+
+The frontend uses TanStack Router. Routes are located in `src/routes`, and
+`src/routeTree.gen.ts` is generated automatically.
+
+Build the frontend with:
+
+```powershell
 npm run build
 ```
 
-## Styling
+## Important Backend Concepts Used
 
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
+This project demonstrates:
 
-### Removing Tailwind CSS
+- Minimal APIs with `MapGet`.
+- Interfaces and dependency injection.
+- `async` and `await` for network requests.
+- `HttpClient` and JSON deserialization.
+- Nullable reference types such as `GeoEntry?`.
+- LINQ sorting with `OrderBy`.
+- Pattern matching with `is`.
+- HTTP status codes such as `200`, `400`, and `404`.
+- Environment variables for secrets.
+- `CancellationToken` for stopping work when a request is cancelled.
+- NetTopologySuite for geographic point-in-polygon calculations.
+- Time-zone conversion with `TimeZoneInfo`.
 
-If you prefer not to use Tailwind CSS:
+## Data and Attribution
 
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Remove `@tailwindcss/vite` and `tailwindcss` from `package.json`
-
-
-## Deploy with Nitro
-
-This project uses Nitro as a generic server adapter, so it can run on any Node-compatible host.
-
-```bash
-npm run build
-node dist/server/index.mjs
-```
-
-The build output is a self-contained Node server. To deploy, push the `dist/` directory to your host (Render, Fly.io, your own VPS, etc.) and run the server command above.
-
-For host-specific presets (Vercel, Netlify, Cloudflare, AWS Lambda, etc.) and tuning, see https://v3.nitro.build/deploy.
-
-
-## Shadcn
-
-Add components using the latest version of [Shadcn](https://ui.shadcn.com/).
-
-```bash
-pnpm dlx shadcn@latest add button
-```
-
-
-
-## Routing
-
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
-```
-
-Then anywhere in your JSX you can use it like so:
-
-```tsx
-<Link to="/about">About us</Link>
-```
-
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'My App' },
-    ],
-  }),
-  shellComponent: ({ children }) => (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <header>
-          <nav>
-            <Link to="/">Home</Link>
-            <Link to="/about">About us</Link>
-          </nav>
-        </header>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  ),
-})
-```
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-## Server Functions
-
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
-
-```tsx
-import { createServerFn } from '@tanstack/react-start'
-
-const getServerTime = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  return new Date().toISOString()
-})
-
-// Use in a component
-function MyComponent() {
-  const [time, setTime] = useState('')
-  
-  useEffect(() => {
-    getServerTime().then(setTime)
-  }, [])
-  
-  return <div>Server time: {time}</div>
-}
-```
-
-## API Routes
-
-You can create API routes by using the `server` property in your route definitions:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-import { json } from '@tanstack/react-start'
-
-export const Route = createFileRoute('/api/hello')({
-  server: {
-    handlers: {
-      GET: () => json({ message: 'Hello, World!' }),
-    },
-  },
-})
-```
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/people')({
-  loader: async () => {
-    const response = await fetch('https://swapi.dev/api/people')
-    return response.json()
-  },
-  component: PeopleComponent,
-})
-
-function PeopleComponent() {
-  const data = Route.useLoaderData()
-  return (
-    <ul>
-      {data.results.map((person) => (
-        <li key={person.name}>{person.name}</li>
-      ))}
-    </ul>
-  )
-}
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-
-# Demo files
-
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
-
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+Electricity-zone boundaries are downloaded from
+[electricity-spot.com](https://electricity-spot.com/data). Price data comes
+from ElprisetJustNu, and carbon-intensity data comes from Electricity Maps.

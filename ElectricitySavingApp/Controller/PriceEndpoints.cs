@@ -7,10 +7,9 @@ using ElectricitySavingApp.Model;
 public static class PriceEndpoints
 {
 
-    // Maps the GET endpoint for fetching electricity prices based on user input.
+    // Register the endpoint for requesting a complete day's prices for one area.
     public static void MapPriceEndpoints(this WebApplication app)
     {
-        // Maps the GET endpoint for fetching electricity prices based on user input.
         app.MapGet("/api/prices", async (
             int year,
             int month,
@@ -19,8 +18,10 @@ public static class PriceEndpoints
             IElectricityPriceService priceService
             ) =>
         {
+            // Normalize input so "se3" and "SE3" behave identically.
             string formatedPriceArea = priceArea.ToUpperInvariant();
 
+            // Prevent unsupported areas from being sent to the external API.
             if (formatedPriceArea is not ("SE1" or "SE2" or "SE3" or "SE4"))
             {
                 return Results.BadRequest(
@@ -28,6 +29,7 @@ public static class PriceEndpoints
                 );
             }
 
+            // Package the query parameters into the service's input model.
             UserInput userInput = new UserInput
             {
                 Year = year,
@@ -37,6 +39,7 @@ public static class PriceEndpoints
             };
 
 
+            // The service retrieves all price intervals for this date and area.
             List<PriceEntry> prices = await priceService.GetElectricityPrices(userInput);
 
             return Results.Ok(prices);
