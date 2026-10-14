@@ -6,11 +6,11 @@ using ElectricitySavingApp.Model;
 public class CarbonIntensityService : ICarbonIntensityService
 {
 
-    // HttpClient is used to send HTTP requests and receive responses from the API.
+    // Sends requests to Electricity Maps using its configured base address.
     private readonly HttpClient httpClient;
 
 
-    // Constructor that initializes the HttpClient and sets the API key in the request headers.
+    // Attach the Electricity Maps API key to every request from this service.
     public CarbonIntensityService(HttpClient httpClient, string? apiKey)
     {
         this.httpClient = httpClient;
@@ -18,14 +18,14 @@ public class CarbonIntensityService : ICarbonIntensityService
     }
 
 
-    // Retrieves the current carbon intensity for the specified price area.
+    // Retrieve the latest carbon-intensity measurement for one Swedish area.
     public async Task<CarbonIntensityEntry?> GetCarbonIntensity(string priceArea)
     {
-        // Builds the URL for the API request and escapes the price area to ensure it's safe for use in a URL.
+        // Build the provider URL and safely encode the zone query value.
         string apiRequestUrl =
             $"v4/carbon-intensity/latest?zone=SE-{Uri.EscapeDataString(priceArea)}";
 
-        // Sends the request to the API and deserializes the JSON response into a carbonIntensityResult object.
+        // Deserialize the provider response into the application's carbon model.
         CarbonIntensityEntry? carbonIntensityResult = await httpClient.GetFromJsonAsync<CarbonIntensityEntry>(apiRequestUrl);
 
         return carbonIntensityResult;

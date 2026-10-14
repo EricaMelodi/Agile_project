@@ -5,6 +5,8 @@ using ElectricitySavingApp.Model;
 // Keeps carbon-intensity support optional when no API key is configured.
 public class UnconfiguredCarbonIntensityService : ICarbonIntensityService
 {
+    // Return no data while keeping the rest of the application usable without
+    // an Electricity Maps API key.
     public Task<CarbonIntensityEntry?> GetCarbonIntensity(string priceArea)
     {
         Console.WriteLine(
