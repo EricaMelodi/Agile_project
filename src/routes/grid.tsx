@@ -17,6 +17,18 @@ type AddressSearchResponse = {
   error?: string
 }
 
+type EnergyResponse = {
+  zone?: string
+  price?: {
+    SEK_per_kWh?: number
+    price_area?: string
+  }
+  error?: string
+}
+
+const energyApiUrl =
+  import.meta.env.VITE_ENERGY_API_URL ?? 'http://localhost:5000'
+
 export const Route = createFileRoute('/grid')({
   component: Grid,
 })
@@ -26,8 +38,11 @@ function Grid() {
   const [suggestions, setSuggestions] = useState<AddressFeature[]>([])
   const [selectedAddress, setSelectedAddress] =
     useState<AddressFeature | null>(null)
+  const [energy, setEnergy] = useState<EnergyResponse | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingEnergy, setIsLoadingEnergy] = useState(false)
   const [error, setError] = useState('')
+  const [energyError, setEnergyError] = useState('')
 
   const searchRequest = useRef<AbortController | null>(null)
 
@@ -37,7 +52,9 @@ function Grid() {
     const trimmedQuery = query.trim()
 
     setSelectedAddress(null)
+    setEnergy(null)
     setError('')
+    setEnergyError('')
 
     if (trimmedQuery.length < 3) {
       setSuggestions([])
@@ -91,10 +108,40 @@ function Grid() {
     }
   }, [query])
 
-  function selectAddress(address: AddressFeature) {
-    setQuery(address.properties?.formatted ?? '')
+  async function selectAddress(address: AddressFeature) {
+    const formattedAddress = address.properties?.formatted
+
+    if (!formattedAddress) {
+      setEnergyError('The selected address is missing its address text.')
+      return
+    }
+
+    setQuery(formattedAddress)
     setSelectedAddress(address)
     setSuggestions([])
+    setEnergy(null)
+    setEnergyError('')
+    setIsLoadingEnergy(true)
+
+    try {
+      const response = await fetch(
+        `${energyApiUrl}/api/current-energy?address=${encodeURIComponent(formattedAddress)}`,
+      )
+      const data = (await response.json()) as EnergyResponse
+
+      if (!response.ok) {
+        throw new Error(data.error ?? 'Could not load electricity price.')
+      }
+
+      setEnergy(data)
+    } catch (requestError) {
+      console.error(requestError)
+      setEnergyError(
+        'Could not load the electricity price for this address. Is the backend running?',
+      )
+    } finally {
+      setIsLoadingEnergy(false)
+    }
   }
 
   return (
@@ -170,6 +217,30 @@ function Grid() {
           <p className="mt-4 max-w-xl text-sm text-white">
             Selected address: {selectedAddress.properties.formatted}
           </p>
+        )}
+
+        {isLoadingEnergy && (
+          <p className="mt-6 text-sm text-white">Loading current price...</p>
+        )}
+
+        {energyError && (
+          <p className="mt-6 max-w-xl text-sm text-red-200">{energyError}</p>
+        )}
+
+        {energy?.price?.SEK_per_kWh !== undefined && (
+          <div className="mt-6 rounded-2xl bg-white px-6 py-4 text-[var(--sea-ink)] shadow-[0_14px_35px_rgba(0,0,0,0.14)]">
+            <p className="text-sm font-semibold uppercase tracking-wide text-[var(--sea-ink-soft)]">
+              Current electricity price
+            </p>
+            <p className="mt-1 text-3xl font-bold">
+              {energy.price.SEK_per_kWh.toFixed(2)} SEK/kWh
+            </p>
+            {energy.zone && (
+              <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
+                Price area: {energy.zone}
+              </p>
+            )}
+          </div>
         )}
       </section>
     </main>
