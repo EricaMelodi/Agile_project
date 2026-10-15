@@ -85,26 +85,26 @@ builder.Services.AddScoped<ICarbonIntensityService>(
 
 
 
-		// Create the geocoding service with the API key stored in configuration.
-		builder.Services.AddScoped<IGeoCodeService>(
-			services =>
-			{
-				string? apiKey =
-					services.GetRequiredService<IConfiguration>()
-						["GEO_CODING_API_KEY"];
+// Create the geocoding service with the API key stored in configuration.
+builder.Services.AddScoped<IGeoCodeService>(
+	services =>
+	{
+		string? apiKey =
+			services.GetRequiredService<IConfiguration>()
+				["GEO_CODING_API_KEY"];
 
-				if (string.IsNullOrWhiteSpace(apiKey))
-				{
-					throw new InvalidOperationException("GeoCoding API key is not configured.");
-				}
+		if (string.IsNullOrWhiteSpace(apiKey))
+		{
+			throw new InvalidOperationException("GeoCoding API key is not configured.");
+		}
 
-				HttpClient httpClient =
-					services.GetRequiredService<IHttpClientFactory>().CreateClient("geoLocation");
+		HttpClient httpClient =
+			services.GetRequiredService<IHttpClientFactory>().CreateClient("geoLocation");
 
-				return new GeoCodeService(httpClient, apiKey);
+		return new GeoCodeService(httpClient, apiKey);
 
-			}
-		);
+	}
+);
 
 
 // Build the configured application and middleware pipeline.
