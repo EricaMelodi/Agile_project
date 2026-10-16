@@ -345,3 +345,87 @@ a {
     color: var(--foreground);
   }
 }
+
+/* Electricity price forecast */
+.forecast-card {
+  margin-top: 24px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  color: var(--sea-ink);
+  background: linear-gradient(
+    165deg,
+    var(--surface-strong),
+    var(--surface)
+  );
+  box-shadow:
+    0 1px 0 var(--inset-glint) inset,
+    0 12px 28px rgba(30, 90, 72, 0.08);
+  backdrop-filter: blur(4px);
+  overflow: hidden;
+}
+
+.forecast-card h2 {
+  margin-top: 0;
+  color: var(--sea-ink);
+  font-family: 'Fraunces', Georgia, serif;
+}
+
+.forecast-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  min-height: 180px;
+  padding: 12px 4px 28px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+}
+
+.forecast-bar-column {
+  flex: 1 0 10px;
+  min-width: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  position: relative;
+}
+
+.forecast-bar {
+  width: 100%;
+  min-width: 6px;
+  max-width: 18px;
+  background: linear-gradient(
+    180deg,
+    var(--lagoon),
+    var(--palm)
+  );
+  border-radius: 4px 4px 0 0;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.forecast-bar:hover {
+  opacity: 0.75;
+  transform: scaleX(1.12);
+}
+
+.forecast-time {
+  position: absolute;
+  top: calc(100% + 8px);
+  white-space: nowrap;
+  font-size: 10px;
+  color: var(--sea-ink-soft);
+}
+
+.forecast-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin-top: 16px;
+  color: var(--sea-ink-soft);
+  font-size: 0.9rem;
+}
+
+.forecast-summary p {
+  margin: 0;
+}

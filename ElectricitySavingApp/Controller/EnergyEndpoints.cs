@@ -1,5 +1,6 @@
 namespace ElectricitySavingApp.Controller;
 
+using System.Net.Sockets;
 using ElectricitySavingApp.Model;
 using ElectricitySavingApp.Services;
 
@@ -7,7 +8,7 @@ public static class EnergyEndpoints
 {
 	// Register the endpoint that combines address lookup, zone detection,
 	// current electricity pricing, and carbon-intensity lookup.
-	public static void MapEnergyEndpoints(this WebApplication app)
+	public static async Task MapEnergyEndpoints(this WebApplication app)
 	{
 		// The address is supplied as one query-string value, for example:
 		// /api/current-energy?address=Street%201,%20Gothenburg
@@ -88,6 +89,77 @@ public static class EnergyEndpoints
 				carbonIntensity
 			});
 		});
+
+		app.MapGet("/api/price-forecast", async (string address, IGeoCodeService geoService, IZoneFinder zonefinder, IElectricityPriceService priceService, CancellationToken cancellationToken) =>
+		{
+			if (string.IsNullOrWhiteSpace(address))
+			{
+				return Results.BadRequest("An address is required.");
+			}
+		
+
+			address = address.Trim();
+
+			GeoEntry? location = await geoService.GetGeoData(address);
+
+			if (location is null)
+			{
+				return Results.NotFound("Address was not found.");
+			}
+
+			string zone = await zonefinder.GetZone(location.latitude, location.longitude, cancellationToken);
+
+			if(zone is not ("SE1" or "SE2" or "SE3" or "SE4"))
+			{
+				return Results.BadRequest($"Unsupported electricity zone '{zone}'.");
+			}
+
+			TimeZoneInfo timeZone = GetSwedishTimeZone();
+
+			DateTimeOffset now = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, timeZone);
+
+			UserInput todayInput = new()
+			{
+				Year = now.Year,
+				Month = now.Month,
+				Day = now.Day,
+				PriceArea = zone
+			};
+
+			List<PriceEntry> prices = await priceService.GetElectricityPrices(todayInput);
+
+			DateTime tomorrow = now.Date.AddDays(1);
+
+			UserInput tomorrowInput = new()
+			{
+				Year = tomorrow.Year,
+				Month = tomorrow.Month,
+				Day = tomorrow.Day,
+				PriceArea = zone
+			};
+
+			try
+			{
+				List<PriceEntry> tomorrowPrices = await priceService.GetElectricityPrices(tomorrowInput);
+				prices.AddRange(tomorrowPrices);
+			}
+			catch (HttpRequestException)
+			{
+				//Keep today's prices if tomorrow's prices are unavailable
+			}
+
+			DateTimeOffset end = now.AddHours(24);
+
+			List<PriceEntry> forecast = prices.Where(p => p.TimeStart >= now && p.TimeStart < end).OrderBy(p => p.TimeStart).ToList();
+
+			return Results.Ok(new
+			{
+				address, zone, generatedAt = now, forecast
+			});
+
+		});
+
+
 	}
 
 	private static PriceEntry? FindCurrentPrice(

@@ -30,5 +30,15 @@ public class CarbonIntensityService : ICarbonIntensityService
 
         return carbonIntensityResult;
     }
+
+    public async Task<CarbonIntensityForecast?> GetCarbonIntensityForecast(string priceArea)
+    {
+        string apiRequestUrl =
+            $"v4/carbon-intensity/forecast" +
+            $"?zone=SE-{Uri.EscapeDataString(priceArea)}" +
+            "&horizonHours=24";
+        
+        return await httpClient.GetFromJsonAsync<CarbonIntensityForecast>(apiRequestUrl);
+    }
     
 }

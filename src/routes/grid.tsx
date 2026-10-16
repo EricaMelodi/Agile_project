@@ -26,6 +26,18 @@ type EnergyResponse = {
   error?: string
 }
 
+type ForecastEntry = {
+  time_start: string
+  SEK_per_kWh: number
+  price_area?: string
+}
+
+type ForecastResponse = {
+  zone?: string
+  forecast?: ForecastEntry[]
+  error?: string
+}
+
 const energyApiUrl =
   import.meta.env.VITE_ENERGY_API_URL ?? 'http://localhost:5000'
 
@@ -43,6 +55,9 @@ function Grid() {
   const [isLoadingEnergy, setIsLoadingEnergy] = useState(false)
   const [error, setError] = useState('')
   const [energyError, setEnergyError] = useState('')
+  const [forecast, setForecast] = useState<ForecastEntry[]>([])
+  const [isLoadingForecast, setIsLoadingForecast] = useState(false)
+  const [forecastError, setForecastError] = useState('')
 
   const searchRequest = useRef<AbortController | null>(null)
 
@@ -107,6 +122,52 @@ function Grid() {
       window.clearTimeout(timeout)
     }
   }, [query])
+
+  useEffect(() => {
+    const address = selectedAddress?.properties?.formatted
+    if (typeof address !== 'string' || !address.trim()) {
+    setForecast([])
+    setForecastError('')
+    setIsLoadingForecast(false)
+    return
+  }
+
+    const controller = new AbortController()
+
+    async function loadForecast(){
+      setIsLoadingForecast(true)
+      setForecastError('')
+      setForecast([])
+
+      try {
+        const encodedAddress = encodeURIComponent(String(address))
+        const response = await fetch(
+          `${energyApiUrl}/api/price-forecast?address=${encodedAddress}`,
+        { signal: controller.signal }
+      )
+
+        if(!response.ok){
+          throw new Error('Could not load the price forecast.')
+        }
+        const data: ForecastResponse = await response.json()
+        setForecast(data.forecast ?? [])
+      } catch (error ){
+        if (error instanceof Error && error.name === 'AbortError'){
+          return
+        }
+
+        setForecastError(error instanceof Error ? error.message : 'Could not load the price forecast.')
+      }
+      finally {
+        if(!controller.signal.aborted){
+          setIsLoadingForecast(false)
+        }
+      }
+    }
+  void loadForecast()
+  return () => controller.abort()
+}, [selectedAddress])
+
 
   async function selectAddress(address: AddressFeature) {
     const formattedAddress = address.properties?.formatted
@@ -243,6 +304,98 @@ function Grid() {
           </div>
         )}
       </section>
+      
+      <section className="forecast-card">
+  <h2>Electricity prices — next 24 hours</h2>
+
+  {isLoadingForecast && <p>Loading price forecast...</p>}
+
+  {forecastError && (
+    <p role="alert">{forecastError}</p>
+  )}
+
+  {!isLoadingForecast &&
+    !forecastError &&
+    forecast.length === 0 && (
+      <p>
+        No forecast prices are available yet.
+        Tomorrow's prices may not have been published.
+      </p>
+    )}
+
+  {forecast.length > 0 && (
+    <>
+      <p>
+        Price area: {forecast[0].price_area ?? energy?.zone}
+        {' · '}
+        {forecast.length} intervals available
+      </p>
+
+      <div className="forecast-chart">
+        {(() => {
+          const values = forecast.map(
+            (entry) => entry.SEK_per_kWh
+          )
+          const minPrice = Math.min(...values)
+          const maxPrice = Math.max(...values)
+          const range = maxPrice - minPrice
+
+          return forecast.map((entry, index) => {
+            const price = entry.SEK_per_kWh
+            const height =
+              range === 0
+                ? 60
+                : 12 + ((price - minPrice) / range) * 108
+
+            const time = new Date(entry.time_start)
+
+            return (
+              <div
+                key={`${entry.time_start}-${index}`}
+                className="forecast-bar-column"
+              >
+                <div
+                  className="forecast-bar"
+                  style={{ height: `${height}px` }}
+                  title={`${time.toLocaleString('sv-SE', {
+                    dateStyle: 'short',
+                    timeStyle: 'short',
+                  })}: ${price.toFixed(3)} SEK/kWh`}
+                />
+                {index % 4 === 0 && (
+                  <span className="forecast-time">
+                    {time.toLocaleTimeString('sv-SE', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                )}
+              </div>
+            )
+          })
+        })()}
+      </div>
+
+      <div className="forecast-summary">
+        <p>
+          Lowest available price:{' '}
+          {Math.min(
+            ...forecast.map((entry) => entry.SEK_per_kWh)
+          ).toFixed(3)}{' '}
+          SEK/kWh
+        </p>
+        <p>
+          Highest available price:{' '}
+          {Math.max(
+            ...forecast.map((entry) => entry.SEK_per_kWh)
+          ).toFixed(3)}{' '}
+          SEK/kWh
+        </p>
+      </div>
+    </>
+  )}
+</section>
+
     </main>
   )
 }
