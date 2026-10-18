@@ -148,6 +148,13 @@ Example response:
 }
 ```
 
+The current-energy response also includes `cheapestHour`,
+`mostExpensiveHour`, `estimatedSavingPerUse`, and
+`assumedConsumptionKWh`. The hourly values are calculated by averaging the
+provider's price intervals within each local Swedish clock hour. The
+estimated saving assumes 1 kWh of consumption and is the difference between
+the most expensive and cheapest hourly prices.
+
 Possible responses:
 
 | Status | Meaning |

@@ -29,6 +29,10 @@ type EnergyResponse = {
     SEK_per_kWh?: number
     price_area?: string
   }
+  cheapestHour?: PriceHour
+  mostExpensiveHour?: PriceHour
+  estimatedSavingPerUse?: number
+  assumedConsumptionKWh?: number
   error?: string
 }
 
@@ -46,6 +50,12 @@ type ForecastResponse = {
 
 type CarbonForecastResponse = {
   forecast?: CarbonInterval[]
+}
+
+type PriceHour = {
+  timeStart: string
+  timeEnd: string
+  sekPerkWh: number
 }
 
 const energyApiUrl =
@@ -265,6 +275,23 @@ function Grid() {
     }
   }
 
+  function formatHourRange(hour?: PriceHour) {
+    if (!hour) return ''
+
+    const start = new Date(hour.timeStart)
+    const end = new Date(hour.timeEnd)
+
+    return `${start.toLocaleTimeString('sv-SE', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Europe/Stockholm',
+    })}–${end.toLocaleTimeString('sv-SE', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Europe/Stockholm',
+    })}`
+  }
+
   return (
     <main
       className="page-wrap min-h-screen bg-cover bg-center bg-fixed px-4 pb-16 pt-14"
@@ -349,18 +376,21 @@ function Grid() {
         )}
 
         {energy?.price?.SEK_per_kWh !== undefined && (
-          <div className="mt-6 rounded-2xl bg-white px-6 py-4 text-[var(--sea-ink)] shadow-[0_14px_35px_rgba(0,0,0,0.14)]">
-            <p className="text-sm font-semibold uppercase tracking-wide text-[var(--sea-ink-soft)]">
-              Current electricity price
-            </p>
-            <p className="mt-1 text-3xl font-bold">
-              {energy.price.SEK_per_kWh.toFixed(2)} SEK/kWh
-            </p>
-            {energy.zone && (
-              <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
-                Price area: {energy.zone}
+          <div className="mt-6 w-full max-w-2xl space-y-4 text-[var(--sea-ink)]">
+            <div className="rounded-2xl bg-white px-6 py-4 shadow-[0_14px_35px_rgba(0,0,0,0.14)]">
+              <p className="text-sm font-semibold uppercase tracking-wide text-[var(--sea-ink-soft)]">
+                Current electricity price
               </p>
-            )}
+              <p className="mt-1 text-3xl font-bold">
+                {energy.price.SEK_per_kWh.toFixed(2)} SEK/kWh
+              </p>
+              {energy.zone && (
+                <p className="mt-1 text-sm text-[var(--sea-ink-soft)]">
+                  Price area: {energy.zone}
+                </p>
+              )}
+            </div>
+
           </div>
         )}
       </section>
@@ -538,6 +568,61 @@ function Grid() {
           {carbonForecastError && recommendationGoal !== 'cheap' && (
             <p className="recommendation-note">{carbonForecastError}</p>
           )}
+        </section>
+      )}
+
+      {energy?.cheapestHour && energy.mostExpensiveHour && (
+        <section className="recommendation-card" aria-labelledby="estimate-title">
+          <div className="recommendation-heading">
+            <div>
+              <p className="island-kicker">Price estimate</p>
+              <h2 id="estimate-title">Compare today's hourly prices</h2>
+              <p>
+                Use the cheapest hour instead of the most expensive one to
+                estimate your saving.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div>
+              <p className="text-sm text-[var(--sea-ink-soft)]">
+                Most expensive hour
+              </p>
+              <p className="mt-1 text-xl font-bold">
+                {formatHourRange(energy.mostExpensiveHour)}
+              </p>
+              <p className="mt-1 text-sm">
+                {energy.mostExpensiveHour.sekPerkWh.toFixed(2)} SEK/kWh
+              </p>
+            </div>
+
+            <div className="sm:text-right">
+              <p className="text-sm text-emerald-600">
+                Cheapest hour
+              </p>
+              <p className="mt-1 text-xl font-bold">
+                {formatHourRange(energy.cheapestHour)}
+              </p>
+              <p className="mt-1 text-sm">
+                {energy.cheapestHour.sekPerkWh.toFixed(2)} SEK/kWh
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 border-t border-[var(--line)] pt-4">
+            <p className="text-sm text-[var(--sea-ink-soft)]">
+              Estimated saving per use
+            </p>
+            <p className="mt-1 text-3xl font-bold text-emerald-600">
+              {(energy.estimatedSavingPerUse ?? 0).toFixed(2)} SEK
+            </p>
+            <p className="mt-2 text-sm text-[var(--sea-ink-soft)]">
+              Based on an assumed consumption of{' '}
+              {energy.assumedConsumptionKWh ?? 1} kWh and the difference
+              between the two hourly prices.
+            </p>
+          </div>
         </section>
       )}
 

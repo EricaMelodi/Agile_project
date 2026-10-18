@@ -73,6 +73,16 @@ public static class EnergyEndpoints
 			if (currentPrice is null)
 				return Results.NotFound("No current electricity price was found.");
 
+			List<HourlyPriceSummary> hourlyPrices = AggregateHourlyPrices(
+				prices,
+				localTimeNow.Offset);
+			HourlyPriceSummary? cheapestHour = hourlyPrices
+				.OrderBy(hour => hour.SekPerkWh)
+				.FirstOrDefault();
+			HourlyPriceSummary? mostExpensiveHour = hourlyPrices
+				.OrderByDescending(hour => hour.SekPerkWh)
+				.FirstOrDefault();
+
 			// Electricity Maps provides the latest carbon-intensity measurement
 			// for the same zone. It may be null when no API key is configured.
 			CarbonIntensityEntry? carbonIntensity =
@@ -86,6 +96,15 @@ public static class EnergyEndpoints
 				longitude = location.longitude,
 				localTime = localTimeNow,
 				price = currentPrice,
+				cheapestHour,
+				mostExpensiveHour,
+				estimatedSavingPerUse = cheapestHour is not null &&
+					mostExpensiveHour is not null
+					? Math.Max(
+						0m,
+						(mostExpensiveHour.SekPerkWh - cheapestHour.SekPerkWh) * 1m)
+					: 0m,
+				assumedConsumptionKWh = 1m,
 				carbonIntensity
 			});
 		});
@@ -160,6 +179,41 @@ public static class EnergyEndpoints
 		});
 
 
+	}
+
+	private static List<HourlyPriceSummary> AggregateHourlyPrices(
+		IReadOnlyList<PriceEntry> prices,
+		TimeSpan localOffset)
+	{
+		return prices
+			.GroupBy(price =>
+			{
+				DateTimeOffset localStart = price.TimeStart.ToOffset(localOffset);
+				return new DateTime(
+					localStart.Year,
+					localStart.Month,
+					localStart.Day,
+					localStart.Hour,
+					0,
+					0,
+					DateTimeKind.Unspecified);
+			})
+			.Select(hour =>
+			{
+				DateTimeOffset hourStart = new(hour.Key, localOffset);
+
+				return new HourlyPriceSummary
+				{
+					TimeStart = hourStart,
+					TimeEnd = hourStart.AddHours(1),
+					SekPerkWh = Math.Round(
+						hour.Average(price => price.SekPerkWh),
+						2,
+						MidpointRounding.AwayFromZero)
+				};
+			})
+			.OrderBy(hour => hour.TimeStart)
+			.ToList();
 	}
 
 	private static PriceEntry? FindCurrentPrice(
