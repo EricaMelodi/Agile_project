@@ -1,13 +1,13 @@
 {
   "version": 2,
-  "dgSpecHash": "aDc7vcoSSKI=",
+  "dgSpecHash": "NvBX3dFIXHo=",
   "success": true,
-  "projectFilePath": "C:\\Users\\MSI GAMING\\Desktop\\Prog\\Agile_project\\ElectricitySavingApp\\ElectricitySavingApp.csproj",
+  "projectFilePath": "/Users/ericamelodi/Documents/DV/Agil projektkurs/Agil-project-/ElectricitySavingApp/ElectricitySavingApp.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\MSI GAMING\\.nuget\\packages\\nettopologysuite\\2.6.0\\nettopologysuite.2.6.0.nupkg.sha512",
-    "C:\\Users\\MSI GAMING\\.nuget\\packages\\nettopologysuite.features\\2.0.0\\nettopologysuite.features.2.0.0.nupkg.sha512",
-    "C:\\Users\\MSI GAMING\\.nuget\\packages\\nettopologysuite.io.geojson\\4.0.0\\nettopologysuite.io.geojson.4.0.0.nupkg.sha512",
-    "C:\\Users\\MSI GAMING\\.nuget\\packages\\newtonsoft.json\\13.0.1\\newtonsoft.json.13.0.1.nupkg.sha512"
+    "/Users/ericamelodi/.nuget/packages/nettopologysuite/2.6.0/nettopologysuite.2.6.0.nupkg.sha512",
+    "/Users/ericamelodi/.nuget/packages/nettopologysuite.features/2.0.0/nettopologysuite.features.2.0.0.nupkg.sha512",
+    "/Users/ericamelodi/.nuget/packages/nettopologysuite.io.geojson/4.0.0/nettopologysuite.io.geojson.4.0.0.nupkg.sha512",
+    "/Users/ericamelodi/.nuget/packages/newtonsoft.json/13.0.1/newtonsoft.json.13.0.1.nupkg.sha512"
   ],
   "logs": []
 }

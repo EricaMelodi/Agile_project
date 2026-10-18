@@ -190,6 +190,28 @@ GET /api/carbon-intensity?priceArea=SE3
 
 Returns the latest carbon-intensity measurement for the area.
 
+### Carbon-intensity forecast
+
+```text
+GET /api/carbon-intensity/forecast?priceArea=SE3
+```
+
+Returns the next 24 hours of carbon-intensity values when
+`ELECTRICITY_MAPS_API_KEY` is configured. The grid page combines this forecast
+with `/api/price-forecast` to recommend a continuous charging or appliance
+window:
+
+- **Cheaply** chooses the lowest-price 4-hour EV window or 2-hour appliance
+  window.
+- **Cleanly** chooses the lowest-carbon window.
+- **Balanced** chooses the window with the best combined normalized price and
+  carbon score.
+
+The displayed savings are estimates based on 20 kWh for an EV session and
+1.5 kWh for a washing-machine or dishwasher cycle. Carbon recommendations
+remain unavailable rather than falling back to guessed carbon values when the
+optional Electricity Maps integration is not configured.
+
 ## Testing with PowerShell
 
 Test geocoding:

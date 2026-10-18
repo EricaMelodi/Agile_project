@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import backgroundPicture from '../assets/BackgroundPic.jpeg'
+import {
+  findRecommendation,
+  type CarbonInterval,
+  type RecommendationActivity,
+  type RecommendationGoal,
+} from '../lib/recommendations'
 
 type AddressFeature = {
   properties?: {
@@ -38,6 +44,10 @@ type ForecastResponse = {
   error?: string
 }
 
+type CarbonForecastResponse = {
+  forecast?: CarbonInterval[]
+}
+
 const energyApiUrl =
   import.meta.env.VITE_ENERGY_API_URL ?? 'http://localhost:5000'
 
@@ -58,6 +68,12 @@ function Grid() {
   const [forecast, setForecast] = useState<ForecastEntry[]>([])
   const [isLoadingForecast, setIsLoadingForecast] = useState(false)
   const [forecastError, setForecastError] = useState('')
+  const [carbonForecast, setCarbonForecast] = useState<CarbonInterval[]>([])
+  const [carbonForecastError, setCarbonForecastError] = useState('')
+  const [recommendationGoal, setRecommendationGoal] =
+    useState<RecommendationGoal>('cheap')
+  const [recommendationActivity, setRecommendationActivity] =
+    useState<RecommendationActivity>('ev')
 
   const searchRequest = useRef<AbortController | null>(null)
 
@@ -126,47 +142,91 @@ function Grid() {
   useEffect(() => {
     const address = selectedAddress?.properties?.formatted
     if (typeof address !== 'string' || !address.trim()) {
-    setForecast([])
-    setForecastError('')
-    setIsLoadingForecast(false)
-    return
-  }
+      setForecast([])
+      setForecastError('')
+      setIsLoadingForecast(false)
+      return
+    }
 
     const controller = new AbortController()
 
-    async function loadForecast(){
+    async function loadForecast() {
       setIsLoadingForecast(true)
       setForecastError('')
       setForecast([])
+      setCarbonForecast([])
+      setCarbonForecastError('')
 
       try {
         const encodedAddress = encodeURIComponent(String(address))
         const response = await fetch(
           `${energyApiUrl}/api/price-forecast?address=${encodedAddress}`,
-        { signal: controller.signal }
-      )
+          { signal: controller.signal }
+        )
 
-        if(!response.ok){
+        if (!response.ok) {
           throw new Error('Could not load the price forecast.')
         }
         const data: ForecastResponse = await response.json()
         setForecast(data.forecast ?? [])
-      } catch (error ){
-        if (error instanceof Error && error.name === 'AbortError'){
+
+        if (data.zone) {
+          try {
+            const carbonResponse = await fetch(
+              `${energyApiUrl}/api/carbon-intensity/forecast?priceArea=${encodeURIComponent(data.zone)}`,
+              { signal: controller.signal },
+            )
+            if (!carbonResponse.ok) {
+              throw new Error('Carbon-intensity forecast is unavailable.')
+            }
+            const carbonData: CarbonForecastResponse = await carbonResponse.json()
+            setCarbonForecast(carbonData.forecast ?? [])
+          } catch (carbonError) {
+            if (carbonError instanceof Error && carbonError.name === 'AbortError') {
+              return
+            }
+            setCarbonForecast([])
+            setCarbonForecastError(
+              carbonError instanceof Error
+                ? carbonError.message
+                : 'Could not load the carbon forecast.',
+            )
+          }
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
           return
         }
 
         setForecastError(error instanceof Error ? error.message : 'Could not load the price forecast.')
+        setCarbonForecast([])
       }
       finally {
-        if(!controller.signal.aborted){
+        if (!controller.signal.aborted) {
           setIsLoadingForecast(false)
         }
       }
     }
-  void loadForecast()
-  return () => controller.abort()
-}, [selectedAddress])
+    void loadForecast()
+    return () => controller.abort()
+  }, [selectedAddress])
+
+  const recommendation = findRecommendation(
+    forecast,
+    carbonForecast,
+    recommendationGoal,
+    recommendationActivity,
+  )
+
+  const recommendationTitle =
+    recommendationActivity === 'ev' ? 'EV charging' : 'washing machine or dishwasher'
+  const goalLabel = {
+    cheap: 'cheapest',
+    clean: 'most sustainable',
+    balanced: 'most balanced',
+  }[recommendationGoal]
+  const formatTime = (date: Date) =>
+    date.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })
 
 
   async function selectAddress(address: AddressFeature) {
@@ -304,97 +364,182 @@ function Grid() {
           </div>
         )}
       </section>
-      
+
       <section className="forecast-card">
-  <h2>Electricity prices — next 24 hours</h2>
+        <h2>Electricity prices — next 24 hours</h2>
 
-  {isLoadingForecast && <p>Loading price forecast...</p>}
+        {isLoadingForecast && <p>Loading price forecast...</p>}
 
-  {forecastError && (
-    <p role="alert">{forecastError}</p>
-  )}
+        {forecastError && (
+          <p role="alert">{forecastError}</p>
+        )}
 
-  {!isLoadingForecast &&
-    !forecastError &&
-    forecast.length === 0 && (
-      <p>
-        No forecast prices are available yet.
-        Tomorrow's prices may not have been published.
-      </p>
-    )}
+        {!isLoadingForecast &&
+          !forecastError &&
+          forecast.length === 0 && (
+            <p>
+              No forecast prices are available yet.
+              Tomorrow's prices may not have been published.
+            </p>
+          )}
 
-  {forecast.length > 0 && (
-    <>
-      <p>
-        Price area: {forecast[0].price_area ?? energy?.zone}
-        {' · '}
-        {forecast.length} intervals available
-      </p>
+        {forecast.length > 0 && (
+          <>
+            <p>
+              Price area: {forecast[0].price_area ?? energy?.zone}
+              {' · '}
+              {forecast.length} intervals available
+            </p>
 
-      <div className="forecast-chart">
-        {(() => {
-          const values = forecast.map(
-            (entry) => entry.SEK_per_kWh
-          )
-          const minPrice = Math.min(...values)
-          const maxPrice = Math.max(...values)
-          const range = maxPrice - minPrice
+            <div className="forecast-chart">
+              {(() => {
+                const values = forecast.map(
+                  (entry) => entry.SEK_per_kWh
+                )
+                const minPrice = Math.min(...values)
+                const maxPrice = Math.max(...values)
+                const range = maxPrice - minPrice
 
-          return forecast.map((entry, index) => {
-            const price = entry.SEK_per_kWh
-            const height =
-              range === 0
-                ? 60
-                : 12 + ((price - minPrice) / range) * 108
+                return forecast.map((entry, index) => {
+                  const price = entry.SEK_per_kWh
+                  const height =
+                    range === 0
+                      ? 60
+                      : 12 + ((price - minPrice) / range) * 108
 
-            const time = new Date(entry.time_start)
+                  const time = new Date(entry.time_start)
 
-            return (
-              <div
-                key={`${entry.time_start}-${index}`}
-                className="forecast-bar-column"
-              >
-                <div
-                  className="forecast-bar"
-                  style={{ height: `${height}px` }}
-                  title={`${time.toLocaleString('sv-SE', {
-                    dateStyle: 'short',
-                    timeStyle: 'short',
-                  })}: ${price.toFixed(3)} SEK/kWh`}
-                />
-                {index % 4 === 0 && (
-                  <span className="forecast-time">
-                    {time.toLocaleTimeString('sv-SE', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </span>
+                  return (
+                    <div
+                      key={`${entry.time_start}-${index}`}
+                      className="forecast-bar-column"
+                    >
+                      <div
+                        className="forecast-bar"
+                        style={{ height: `${height}px` }}
+                        title={`${time.toLocaleString('sv-SE', {
+                          dateStyle: 'short',
+                          timeStyle: 'short',
+                        })}: ${price.toFixed(3)} SEK/kWh`}
+                      />
+                      {index % 4 === 0 && (
+                        <span className="forecast-time">
+                          {time.toLocaleTimeString('sv-SE', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                      )}
+                    </div>
+                  )
+                })
+              })()}
+            </div>
+
+            <div className="forecast-summary">
+              <p>
+                Lowest available price:{' '}
+                {Math.min(
+                  ...forecast.map((entry) => entry.SEK_per_kWh)
+                ).toFixed(3)}{' '}
+                SEK/kWh
+              </p>
+              <p>
+                Highest available price:{' '}
+                {Math.max(
+                  ...forecast.map((entry) => entry.SEK_per_kWh)
+                ).toFixed(3)}{' '}
+                SEK/kWh
+              </p>
+            </div>
+          </>
+        )}
+      </section>
+
+      {forecast.length > 0 && (
+        <section className="recommendation-card" aria-labelledby="recommendations-title">
+          <div className="recommendation-heading">
+            <div>
+              <p className="island-kicker">Smart energy tips</p>
+              <h2 id="recommendations-title">Plan your next energy task</h2>
+              <p>
+                Choose what you want to run and we will find the {goalLabel} continuous
+                window in the next 24 hours.
+              </p>
+            </div>
+            <span className="recommendation-icon" aria-hidden="true">✦</span>
+          </div>
+
+          <div className="recommendation-controls">
+            <div>
+              <span className="recommendation-label">Activity</span>
+              <div className="recommendation-options" role="group" aria-label="Choose activity">
+                {([
+                  ['ev', 'EV · 4 hours'],
+                  ['appliance', 'Appliance · 2 hours'],
+                ] as const).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={recommendationActivity === value ? 'recommendation-option is-selected' : 'recommendation-option'}
+                    onClick={() => setRecommendationActivity(value)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <span className="recommendation-label">Priority</span>
+              <div className="recommendation-options" role="group" aria-label="Choose priority">
+                {([
+                  ['cheap', 'Cheaply'],
+                  ['clean', 'Cleanly'],
+                  ['balanced', 'Balanced'],
+                ] as const).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={recommendationGoal === value ? 'recommendation-option is-selected' : 'recommendation-option'}
+                    onClick={() => setRecommendationGoal(value)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {recommendation ? (
+            <div className="recommendation-result">
+              <p className="recommendation-kicker">{goalLabel} time for {recommendationTitle}</p>
+              <p className="recommendation-window">
+                {formatTime(recommendation.start)} – {formatTime(recommendation.end)}
+              </p>
+              <p className="recommendation-copy">
+                Based on the available price and grid data for your location.
+              </p>
+              <div className="recommendation-metrics">
+                {recommendationGoal !== 'clean' && (
+                  <span>Save approx. <strong>{recommendation.savedKronor.toFixed(0)} kr</strong> vs peak hours</span>
+                )}
+                {recommendationGoal !== 'cheap' && recommendation.avoidedCarbon !== null && (
+                  <span>Avoid approx. <strong>{recommendation.avoidedCarbon.toFixed(0)} gCO₂</strong> vs peak hours</span>
                 )}
               </div>
-            )
-          })
-        })()}
-      </div>
-
-      <div className="forecast-summary">
-        <p>
-          Lowest available price:{' '}
-          {Math.min(
-            ...forecast.map((entry) => entry.SEK_per_kWh)
-          ).toFixed(3)}{' '}
-          SEK/kWh
-        </p>
-        <p>
-          Highest available price:{' '}
-          {Math.max(
-            ...forecast.map((entry) => entry.SEK_per_kWh)
-          ).toFixed(3)}{' '}
-          SEK/kWh
-        </p>
-      </div>
-    </>
-  )}
-</section>
+            </div>
+          ) : (
+            <p className="recommendation-unavailable" role="status">
+              {recommendationGoal === 'clean' && !carbonForecast.length
+                ? 'Sustainable recommendations need a carbon-intensity forecast. Add an Electricity Maps API key to enable them.'
+                : 'There is not enough continuous forecast data to create this recommendation yet.'}
+            </p>
+          )}
+          {carbonForecastError && recommendationGoal !== 'cheap' && (
+            <p className="recommendation-note">{carbonForecastError}</p>
+          )}
+        </section>
+      )}
 
     </main>
   )

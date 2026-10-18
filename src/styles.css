@@ -429,3 +429,134 @@ a {
 .forecast-summary p {
   margin: 0;
 }
+
+.recommendation-card {
+  margin-top: 24px;
+  padding: 24px;
+  border: 1px solid color-mix(in oklab, var(--lagoon) 35%, var(--line));
+  border-radius: 16px;
+  color: var(--sea-ink);
+  background: linear-gradient(145deg, color-mix(in oklab, var(--surface-strong) 92%, var(--lagoon) 8%), var(--surface));
+  box-shadow: 0 1px 0 var(--inset-glint) inset, 0 12px 28px rgba(30, 90, 72, 0.08);
+}
+
+.recommendation-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.recommendation-heading h2 {
+  margin: 4px 0 6px;
+  font-family: 'Fraunces', Georgia, serif;
+}
+
+.recommendation-heading p:last-child {
+  margin: 0;
+  color: var(--sea-ink-soft);
+}
+
+.recommendation-icon {
+  display: grid;
+  flex: 0 0 44px;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  color: var(--palm);
+  background: color-mix(in oklab, var(--sand) 72%, white 28%);
+  font-size: 1.4rem;
+}
+
+.recommendation-controls {
+  display: grid;
+  gap: 16px;
+  margin: 22px 0;
+}
+
+.recommendation-label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sea-ink-soft);
+}
+
+.recommendation-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.recommendation-option {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 9px 14px;
+  color: var(--sea-ink);
+  background: var(--chip-bg);
+  font: inherit;
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+
+.recommendation-option:hover,
+.recommendation-option.is-selected {
+  border-color: var(--lagoon-deep);
+  color: var(--sea-ink);
+  background: color-mix(in oklab, var(--lagoon) 20%, white);
+}
+
+.recommendation-result {
+  padding: 18px;
+  border-radius: 14px;
+  background: color-mix(in oklab, var(--foam) 82%, var(--lagoon) 18%);
+}
+
+.recommendation-kicker {
+  margin: 0;
+  color: var(--palm);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.recommendation-window {
+  margin: 6px 0;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: clamp(1.8rem, 6vw, 2.6rem);
+  font-weight: 700;
+}
+
+.recommendation-copy,
+.recommendation-note,
+.recommendation-unavailable {
+  margin: 0;
+  color: var(--sea-ink-soft);
+  font-size: 0.9rem;
+}
+
+.recommendation-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-top: 14px;
+  font-size: 0.9rem;
+}
+
+.recommendation-metrics strong {
+  color: var(--palm);
+}
+
+.recommendation-note {
+  margin-top: 12px;
+  font-size: 0.8rem;
+}
+
+@media (min-width: 640px) {
+  .recommendation-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+}

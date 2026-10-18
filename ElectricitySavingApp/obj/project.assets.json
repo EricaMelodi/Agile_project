@@ -143,24 +143,25 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\MSI GAMING\\.nuget\\packages\\": {}
+    "/Users/ericamelodi/.nuget/packages/": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\MSI GAMING\\Desktop\\Prog\\Agile_project\\ElectricitySavingApp\\ElectricitySavingApp.csproj",
+      "projectUniqueName": "/Users/ericamelodi/Documents/DV/Agil projektkurs/Agil-project-/ElectricitySavingApp/ElectricitySavingApp.csproj",
       "projectName": "ElectricitySavingApp",
-      "projectPath": "C:\\Users\\MSI GAMING\\Desktop\\Prog\\Agile_project\\ElectricitySavingApp\\ElectricitySavingApp.csproj",
-      "packagesPath": "C:\\Users\\MSI GAMING\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\MSI GAMING\\Desktop\\Prog\\Agile_project\\ElectricitySavingApp\\obj\\",
+      "projectPath": "/Users/ericamelodi/Documents/DV/Agil projektkurs/Agil-project-/ElectricitySavingApp/ElectricitySavingApp.csproj",
+      "packagesPath": "/Users/ericamelodi/.nuget/packages/",
+      "outputPath": "/Users/ericamelodi/Documents/DV/Agil projektkurs/Agil-project-/ElectricitySavingApp/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\MSI GAMING\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "/Users/ericamelodi/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net10.0"
       ],
       "sources": {
+        "/opt/homebrew/Cellar/dotnet/10.0.401_1/libexec/library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -215,7 +216,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.402/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "/opt/homebrew/Cellar/dotnet/10.0.401_1/libexec/sdk/10.0.401/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.AspNetCore": "(,10.0.32767]",
           "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",
