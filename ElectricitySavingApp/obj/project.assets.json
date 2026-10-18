@@ -143,19 +143,19 @@
     ]
   },
   "packageFolders": {
-    "/Users/ericamelodi/.nuget/packages/": {}
+    "/Users/isabelljohansson/.nuget/packages/": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/Users/ericamelodi/Documents/DV/Agil projektkurs/Agil-project-/ElectricitySavingApp/ElectricitySavingApp.csproj",
+      "projectUniqueName": "/Users/isabelljohansson/Agile_project/ElectricitySavingApp/ElectricitySavingApp.csproj",
       "projectName": "ElectricitySavingApp",
-      "projectPath": "/Users/ericamelodi/Documents/DV/Agil projektkurs/Agil-project-/ElectricitySavingApp/ElectricitySavingApp.csproj",
-      "packagesPath": "/Users/ericamelodi/.nuget/packages/",
-      "outputPath": "/Users/ericamelodi/Documents/DV/Agil projektkurs/Agil-project-/ElectricitySavingApp/obj/",
+      "projectPath": "/Users/isabelljohansson/Agile_project/ElectricitySavingApp/ElectricitySavingApp.csproj",
+      "packagesPath": "/Users/isabelljohansson/.nuget/packages/",
+      "outputPath": "/Users/isabelljohansson/Agile_project/ElectricitySavingApp/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "/Users/ericamelodi/.nuget/NuGet/NuGet.Config"
+        "/Users/isabelljohansson/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net10.0"

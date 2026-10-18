@@ -576,7 +576,7 @@ function Grid() {
           <div className="recommendation-heading">
             <div>
               <p className="island-kicker">Price estimate</p>
-              <h2 id="estimate-title">Compare today's hourly prices</h2>
+              <h2 id="estimate-title">Today’s Electricity Price Overall Overview</h2>
               <p>
                 Use the cheapest hour instead of the most expensive one to
                 estimate your saving.
@@ -599,7 +599,7 @@ function Grid() {
 
             <div className="sm:text-right">
               <p className="text-sm text-emerald-600">
-                Cheapest hour
+                Cheapest hour - a tip, try to use this time ☺
               </p>
               <p className="mt-1 text-xl font-bold">
                 {formatHourRange(energy.cheapestHour)}
