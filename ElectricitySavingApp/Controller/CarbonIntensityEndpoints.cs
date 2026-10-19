@@ -7,6 +7,7 @@ using ElectricitySavingApp.Model;
 public static class CarbonIntensityEndpoints
 {
 
+	// Register the endpoint for the latest carbon-intensity measurement.
     public static void MapCarbonIntensityEndpoints(this WebApplication app)
     {
         
@@ -15,6 +16,7 @@ public static class CarbonIntensityEndpoints
             ICarbonIntensityService carbonIntensityService
             ) =>
         {
+            // Normalize the area before validating and querying the provider.
             string formattedPriceArea = priceArea.ToUpperInvariant();
 
             if (formattedPriceArea is not ("SE1" or "SE2" or "SE3" or "SE4") )
@@ -24,6 +26,7 @@ public static class CarbonIntensityEndpoints
                 );
             }
 
+            // The result may be null when the optional carbon service is unconfigured.
             CarbonIntensityEntry? carbonIntensityResult = 
                 await carbonIntensityService.GetCarbonIntensity(formattedPriceArea);
 

@@ -1,0 +1,137 @@
+namespace ElectricitySavingApp.Controller;
+
+using ElectricitySavingApp.Model;
+using ElectricitySavingApp.Services;
+
+public static class EnergyEndpoints
+{
+	// Register the endpoint that combines address lookup, zone detection,
+	// current electricity pricing, and carbon-intensity lookup.
+	public static void MapEnergyEndpoints(this WebApplication app)
+	{
+		// The address is supplied as one query-string value, for example:
+		// /api/current-energy?address=Street%201,%20Gothenburg
+		app.MapGet("/api/current-energy", async (
+			string address,
+			IGeoCodeService geoService,
+			IZoneFinder zoneFinder,
+			IElectricityPriceService priceService,
+			ICarbonIntensityService carbonService,
+			CancellationToken cancellationToken) =>
+		{
+			// Reject an empty address before calling an external service.
+			if (string.IsNullOrWhiteSpace(address))
+			{
+				return Results.BadRequest(
+					"An address containing street name, street number, and city is required.");
+			}
+
+			// Remove accidental spaces before sending the address to the geocoder.
+			address = address.Trim();
+			GeoEntry? coordinates = await geoService.GetGeoData(address);
+
+			// A null result means that the geocoder could not find the address.
+			if (coordinates is null)
+				return Results.NotFound("Address was not found.");
+
+			// Convert the coordinates into a Swedish electricity bidding zone.
+			string zone = await zoneFinder.GetZone(
+				coordinates.latitude,
+				coordinates.longitude,
+				cancellationToken);
+
+			// The rest of this application currently supports Swedish zones only.
+			if (zone is not ("SE1" or "SE2" or "SE3" or "SE4"))
+			{
+				return Results.BadRequest(
+					$"The address resolved to unsupported electricity zone '{zone}'.");
+			}
+
+			// The price API uses the local Swedish calendar date, not UTC date.
+			TimeZoneInfo localTimeZone = GetSwedishTimeZone();
+			DateTimeOffset localTimeNow = TimeZoneInfo.ConvertTime(
+				DateTimeOffset.UtcNow,
+				localTimeZone);
+
+			// Build the exact date and price-area input expected by the price service.
+			UserInput userInput = new UserInput
+			{
+				Year = localTimeNow.Year,
+				Month = localTimeNow.Month,
+				Day = localTimeNow.Day,
+				PriceArea = zone
+			};
+
+			// Download all intervals for today in the resolved price area.
+			List<PriceEntry> prices = await priceService
+				.GetElectricityPrices(userInput);
+
+			// Select the interval that contains the current local time.
+			PriceEntry? currentPrice = FindCurrentPrice(prices, localTimeNow);
+
+			if (currentPrice is null)
+				return Results.NotFound("No current electricity price was found.");
+
+			// Electricity Maps provides the latest carbon-intensity measurement
+			// for the same zone. It may be null when no API key is configured.
+			CarbonIntensityEntry? carbonIntensity =
+				await carbonService.GetCarbonIntensity(zone);
+
+
+
+			return Results.Ok(new
+			{
+				address,
+				zone,
+				latitude = coordinates.latitude,
+				longitude = coordinates.longitude,
+				localTime = localTimeNow,
+				price = currentPrice,
+				carbonIntensity
+			});
+		});
+
+		
+	}
+
+	private static PriceEntry? FindCurrentPrice(
+		IReadOnlyList<PriceEntry> prices,
+		DateTimeOffset localNow)
+	{
+		// Sort defensively because external API responses should not be assumed
+		// to arrive in chronological order.
+		List<PriceEntry> orderedPrices = prices
+			.OrderBy(price => price.TimeStart)
+			.ToList();
+
+		for (int index = 0; index < orderedPrices.Count; index++)
+		{
+			// The next price start marks the end of this interval. The final
+			// entry is assumed to cover the normal 15-minute period.
+			DateTimeOffset startsAt = orderedPrices[index].TimeStart;
+			DateTimeOffset endsAt = index + 1 < orderedPrices.Count
+				? orderedPrices[index + 1].TimeStart
+				: startsAt.AddMinutes(15);
+
+			if (startsAt <= localNow && localNow < endsAt)
+				return orderedPrices[index];
+		}
+
+		return null;
+	}
+
+	private static TimeZoneInfo GetSwedishTimeZone()
+	{
+		// Linux/macOS use the IANA identifier. Windows uses a different name,
+		// so the fallback keeps the application portable across operating systems.
+		try
+		{
+			return TimeZoneInfo.FindSystemTimeZoneById("Europe/Stockholm");
+		}
+		catch (TimeZoneNotFoundException)
+		{
+			return TimeZoneInfo.FindSystemTimeZoneById(
+				"W. Europe Standard Time");
+		}
+	}
+}
