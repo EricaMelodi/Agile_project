@@ -12,4 +12,6 @@ dist-ssr
 __unconfig*
 todos.json
 .env
+.env.*
+!.env.example.env
 

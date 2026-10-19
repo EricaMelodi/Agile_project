@@ -8,6 +8,53 @@ The project contains two applications:
 - `ElectricitySavingApp`: ASP.NET Core backend written in C#.
 - `src`: React and TanStack frontend.
 
+The application is available at `/grid`. Enter at least three characters to
+search Swedish addresses, select a suggestion, and view current electricity
+prices, the price forecast, carbon intensity, and an activity recommendation.
+
+## Quick Start
+
+Install the frontend dependencies:
+
+```powershell
+npm install
+```
+
+Create a root `.env` file. The frontend address-search route requires
+`GEOAPIFY_API_KEY`:
+
+```dotenv
+GEOAPIFY_API_KEY=your-geoapify-api-key
+```
+
+Set the backend variables in the environment used to start .NET:
+
+```powershell
+$env:GEO_CODING_API_KEY = "your-geocoding-api-key"
+# Optional: enables live carbon-intensity data and forecasts.
+$env:ELECTRICITY_MAPS_API_KEY = "your-electricity-maps-api-key"
+```
+
+Start the backend in one terminal:
+
+```powershell
+dotnet run --project .\ElectricitySavingApp\ElectricitySavingApp.csproj
+```
+
+Start the frontend in a second terminal:
+
+```powershell
+npm run dev
+```
+
+Open <http://localhost:3000/grid>. The frontend expects the backend at
+`http://localhost:5000` by default. Set `VITE_ENERGY_API_URL` in `.env` if the
+backend runs at another URL, then restart the frontend.
+
+Never commit `.env` or API keys. Use `.env.example` as a template for the
+required frontend variables, and keep only placeholder values in that tracked
+file.
+
 ## Backend Architecture
 
 The backend follows this flow:
@@ -29,10 +76,11 @@ The backend communicates with four external services:
 | `electricity-spot.com` | Provides GeoJSON electricity-zone boundaries. |
 | `elprisetjustnu.se` | Provides Swedish electricity prices. |
 | Electricity Maps | Provides latest carbon intensity. |
+| Geoapify | Provides Swedish address autocomplete suggestions. |
 
-The browser should call the backend rather than calling these providers
-directly. This keeps API keys on the server and keeps the application logic in
-one place.
+The browser calls the backend for electricity data. Address autocomplete is
+handled by the frontend's server-side `/api/address-search` route, so the
+Geoapify key is not sent to the browser.
 
 ## Backend Structure
 
@@ -68,10 +116,23 @@ frontend.
 
 ## Configuration
 
-The geocoding API key is required:
+The backend geocoding API key is required:
 
 ```powershell
 $env:GEO_CODING_API_KEY = "your-geocoding-api-key"
+```
+
+The frontend autocomplete API key is also required. Put it in the root `.env`
+file:
+
+```dotenv
+GEOAPIFY_API_KEY=your-geoapify-api-key
+```
+
+The frontend backend URL is optional and defaults to `http://localhost:5000`:
+
+```dotenv
+VITE_ENERGY_API_URL=http://localhost:5000
 ```
 
 The Electricity Maps key enables carbon-intensity data:
@@ -100,6 +161,8 @@ http://localhost:5000
 ```
 
 Use the URL printed by `dotnet run` if a different port is selected.
+
+The backend CORS policy allows the frontend at `http://localhost:3000`.
 
 ## Main API Endpoint
 
@@ -136,9 +199,9 @@ Example response:
   "longitude": 11.9616709,
   "localTime": "2026-10-14T14:30:00+02:00",
   "price": {
-    "timeStart": "2026-10-14T14:15:00+02:00",
-    "sekPerkWh": 0.85,
-    "priceArea": "SE3"
+    "time_start": "2026-10-14T14:15:00+02:00",
+    "SEK_per_kWh": 0.85,
+    "price_area": "SE3"
   },
   "carbonIntensity": {
     "carbonIntensityValue": 42,
@@ -147,6 +210,13 @@ Example response:
   }
 }
 ```
+
+The current-energy response also includes `cheapestHour`,
+`mostExpensiveHour`, `estimatedSavingPerUse`, and
+`assumedConsumptionKWh`. The hourly values are calculated by averaging the
+provider's price intervals within each local Swedish clock hour. The
+estimated saving assumes 1 kWh of consumption and is the difference between
+the most expensive and cheapest hourly prices.
 
 Possible responses:
 
@@ -157,6 +227,15 @@ Possible responses:
 | `404 Not Found` | The address or current price was not found. |
 
 ## Other API Endpoints
+
+### Address autocomplete
+
+```text
+GET /api/address-search?q={text}
+```
+
+This is a frontend server route. It returns up to five Swedish Geoapify
+features and requires `GEOAPIFY_API_KEY`.
 
 ### Coordinates for an address
 
@@ -189,6 +268,28 @@ GET /api/carbon-intensity?priceArea=SE3
 ```
 
 Returns the latest carbon-intensity measurement for the area.
+
+### Carbon-intensity forecast
+
+```text
+GET /api/carbon-intensity/forecast?priceArea=SE3
+```
+
+Returns the next 24 hours of carbon-intensity values when
+`ELECTRICITY_MAPS_API_KEY` is configured. The grid page combines this forecast
+with `/api/price-forecast` to recommend a continuous charging or appliance
+window:
+
+- **Cheaply** chooses the lowest-price 4-hour EV window or 2-hour appliance
+  window.
+- **Cleanly** chooses the lowest-carbon window.
+- **Balanced** chooses the window with the best combined normalized price and
+  carbon score.
+
+The displayed savings are estimates based on 20 kWh for an EV session and
+1.5 kWh for a washing-machine or dishwasher cycle. Carbon recommendations
+remain unavailable rather than falling back to guessed carbon values when the
+optional Electricity Maps integration is not configured.
 
 ## Testing with PowerShell
 
@@ -238,6 +339,15 @@ http://localhost:3000
 
 The backend allows requests from this origin through its CORS policy.
 
+The main frontend routes are:
+
+| Route | Purpose |
+| --- | --- |
+| `/` | Home page. |
+| `/grid` | Address search, electricity data, forecasts, and recommendations. |
+| `/info` | Energy information. |
+| `/about` | About page. |
+
 The frontend uses TanStack Router. Routes are located in `src/routes`, and
 `src/routeTree.gen.ts` is generated automatically.
 
@@ -246,6 +356,10 @@ Build the frontend with:
 ```powershell
 npm run build
 ```
+
+When running the frontend and backend separately, start the backend before
+selecting an address on `/grid`. Restart the frontend after changing `.env`
+because Vite reads environment variables when it starts.
 
 ## Important Backend Concepts Used
 

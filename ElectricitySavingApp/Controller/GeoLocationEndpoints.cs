@@ -1,7 +1,6 @@
-namespace ElectricitySavingApp.Controller;
-
 using ElectricitySavingApp.Model;
 using ElectricitySavingApp.Services;
+namespace ElectricitySavingApp.Controller;
 
 public static class GeoLocationEndpoints
 {

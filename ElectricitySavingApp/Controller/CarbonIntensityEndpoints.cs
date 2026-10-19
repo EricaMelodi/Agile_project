@@ -36,6 +36,23 @@ public static class CarbonIntensityEndpoints
         }
         );
 
+        app.MapGet("/api/carbon-intensity/forecast", async( string priceArea, ICarbonIntensityService carbonIntensityService) =>
+        {
+            string area = priceArea.ToUpperInvariant();
+
+            if(area is not("SE1" or "SE2" or "SE3" or "SE4"))
+            {
+                return Results.BadRequest("Price must be in SE1, SE2, SE3 or SE4.");
+            }
+
+            var forecast =
+                await carbonIntensityService.GetCarbonIntensityForecast(area);
+
+            return forecast is null
+                ? Results.NotFound("Carbon-intensity forecast unavailable")
+                : Results.Ok(forecast);
+        });
+
     }
 
 }

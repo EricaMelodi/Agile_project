@@ -14,4 +14,9 @@ public class UnconfiguredCarbonIntensityService : ICarbonIntensityService
 
         return Task.FromResult<CarbonIntensityEntry?>(null);
     }
+
+    public Task<CarbonIntensityForecast?> GetCarbonIntensityForecast(string priceArea)
+    {
+        return Task.FromResult<CarbonIntensityForecast?>(null);
+    }
 }

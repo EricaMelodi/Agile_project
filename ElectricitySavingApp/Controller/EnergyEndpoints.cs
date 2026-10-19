@@ -1,7 +1,9 @@
-namespace ElectricitySavingApp.Controller;
-
+using System.Net.Sockets;
 using ElectricitySavingApp.Model;
 using ElectricitySavingApp.Services;
+
+namespace ElectricitySavingApp.Controller;
+
 
 public static class EnergyEndpoints
 {
@@ -72,6 +74,16 @@ public static class EnergyEndpoints
 			if (currentPrice is null)
 				return Results.NotFound("No current electricity price was found.");
 
+			List<HourlyPriceSummary> hourlyPrices = AggregateHourlyPrices(
+				prices,
+				localTimeNow.Offset);
+			HourlyPriceSummary? cheapestHour = hourlyPrices
+				.OrderBy(hour => hour.SekPerkWh)
+				.FirstOrDefault();
+			HourlyPriceSummary? mostExpensiveHour = hourlyPrices
+				.OrderByDescending(hour => hour.SekPerkWh)
+				.FirstOrDefault();
+
 			// Electricity Maps provides the latest carbon-intensity measurement
 			// for the same zone. It may be null when no API key is configured.
 			CarbonIntensityEntry? carbonIntensity =
@@ -87,11 +99,314 @@ public static class EnergyEndpoints
 				longitude = coordinates.longitude,
 				localTime = localTimeNow,
 				price = currentPrice,
+				cheapestHour,
+				mostExpensiveHour,
+				estimatedSavingPerUse = cheapestHour is not null &&
+					mostExpensiveHour is not null
+					? Math.Max(
+						0m,
+						(mostExpensiveHour.SekPerkWh - cheapestHour.SekPerkWh) * 1m)
+					: 0m,
+				assumedConsumptionKWh = 1m,
 				carbonIntensity
 			});
 		});
 
+
+
+
+		app.MapGet("/api/current-energy/location", async (
+			double latitude,
+			double longitude,
+			IZoneFinder zoneFinder,
+			IElectricityPriceService priceService,
+			ICarbonIntensityService carbonService,
+			CancellationToken cancellationToken
+			) =>
+		{
+			if (!double.IsFinite(latitude) || !double.IsFinite(longitude) ||
+				latitude < -90 || latitude > 90 ||
+				longitude < -180 || longitude > 180)
+			{
+				return Results.BadRequest("Coordinates are not valid.");
+			}
+
+			string zone = await zoneFinder.GetZone(
+				latitude,
+				longitude,
+				cancellationToken
+				);
+			
+			if (zone is not ("SE1" or "SE2" or "SE3" or "SE4"))
+			{
+				return Results.BadRequest(
+					$"Unsupported electricity zone '{zone}'."
+				);
+			}
+
+			TimeZoneInfo localTimeZone = GetSwedishTimeZone();
+
+			DateTimeOffset currentLocalTime = TimeZoneInfo.ConvertTime(
+				DateTimeOffset.UtcNow,
+				localTimeZone
+				);
+
+			
+			UserInput input = new UserInput()
+			{
+				Year = currentLocalTime.Year,
+				Month = currentLocalTime.Month,
+				Day = currentLocalTime.Day,
+				PriceArea = zone
+			};
+
+			List<PriceEntry> prices =
+				await priceService.GetElectricityPrices(input);
+
+			PriceEntry? currentPrice =
+				FindCurrentPrice(prices, currentLocalTime);
+
+			if (currentPrice is null)
+			{
+				return Results.NotFound(
+					"No current electricity price was found."
+				);
+			}
+
+			List<HourlyPriceSummary> hourlyPrices =
+				AggregateHourlyPrices(prices, currentLocalTime.Offset);
+
+			HourlyPriceSummary? cheapestHour = hourlyPrices.
+				OrderBy(hour => hour.SekPerkWh).FirstOrDefault();
+
+			HourlyPriceSummary? mostExpensiveHour = hourlyPrices.
+			OrderByDescending(hour => hour.SekPerkWh).FirstOrDefault();
+
+			CarbonIntensityEntry? carbonIntensity = 
+				await carbonService.GetCarbonIntensity(zone);
+
+
+			return Results.Ok(new
+			{
+				address = "Current location",
+				zone,
+				latitude,
+				longitude,
+				localTime = currentLocalTime,
+				price = currentPrice,
+				cheapestHour,
+				mostExpensiveHour,
+				estimatedSavingPerUse =
+					cheapestHour is not null && mostExpensiveHour is not null
+					? Math.Max(0m, (mostExpensiveHour.SekPerkWh - cheapestHour.SekPerkWh))
+					: 0m, assumedConsumptionKWh = 1m, carbonIntensity
+			});
+
+		});
+
+
+
+
+		app.MapGet("/api/price-forecast", async (string address, IGeoCodeService geoService, IZoneFinder zonefinder, IElectricityPriceService priceService, CancellationToken cancellationToken) =>
+		{
+			if (string.IsNullOrWhiteSpace(address))
+			{
+				return Results.BadRequest("An address is required.");
+			}
 		
+
+			address = address.Trim();
+
+			GeoEntry? location = await geoService.GetGeoData(address);
+
+			if (location is null)
+			{
+				return Results.NotFound("Address was not found.");
+			}
+
+			string zone = await zonefinder.GetZone(location.latitude, location.longitude, cancellationToken);
+
+			if(zone is not ("SE1" or "SE2" or "SE3" or "SE4"))
+			{
+				return Results.BadRequest($"Unsupported electricity zone '{zone}'.");
+			}
+
+			TimeZoneInfo timeZone = GetSwedishTimeZone();
+
+			DateTimeOffset now = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, timeZone);
+
+			UserInput todayInput = new()
+			{
+				Year = now.Year,
+				Month = now.Month,
+				Day = now.Day,
+				PriceArea = zone
+			};
+
+			List<PriceEntry> prices = await priceService.GetElectricityPrices(todayInput);
+
+			DateTime tomorrow = now.Date.AddDays(1);
+
+			UserInput tomorrowInput = new()
+			{
+				Year = tomorrow.Year,
+				Month = tomorrow.Month,
+				Day = tomorrow.Day,
+				PriceArea = zone
+			};
+
+			try
+			{
+				List<PriceEntry> tomorrowPrices = await priceService.GetElectricityPrices(tomorrowInput);
+				prices.AddRange(tomorrowPrices);
+			}
+			catch (HttpRequestException)
+			{
+				//Keep today's prices if tomorrow's prices are unavailable
+			}
+
+			DateTimeOffset end = now.AddHours(24);
+
+			List<PriceEntry> forecast = prices.Where(p => p.TimeStart >= now && p.TimeStart < end).OrderBy(p => p.TimeStart).ToList();
+
+			return Results.Ok(new
+			{
+				address, zone, generatedAt = now, forecast
+			});
+
+		});
+
+
+		app.MapGet("/api/price-forecast/location", async (
+			double latitude,
+			double longitude,
+			IZoneFinder zoneFinder,
+			IElectricityPriceService priceService,
+			CancellationToken cancellationToken
+			) =>
+		{
+
+			if (!double.IsFinite(latitude) || !double.IsFinite(longitude) ||
+				latitude < -90 || latitude > 90 ||
+				longitude < -180 || longitude > 180)
+			{
+				return Results.BadRequest("Coordinates are not valid.");
+			}
+		
+
+			string zone = await zoneFinder.GetZone(
+				latitude, 
+				longitude, 
+				cancellationToken
+				);
+
+			if (zone is not ("SE1" or "SE2" or "SE3" or "SE4"))
+			{
+				return Results.BadRequest($"Unsupported electricity zone '{zone}'.");
+			}
+
+			TimeZoneInfo localTimeZone = GetSwedishTimeZone();
+
+			DateTimeOffset today = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, localTimeZone);
+
+			UserInput todayInput = new()
+			{
+				Year = today.Year,
+				Month = today.Month,
+				Day = today.Day,
+				PriceArea = zone
+			};
+
+			List<PriceEntry> todaysPrices = await priceService.GetElectricityPrices(todayInput);
+
+
+			DateTime tomorrow = today.Date.AddDays(1);
+
+			UserInput tomorrowInput = new()
+			{
+				Year = tomorrow.Year,
+				Month = tomorrow.Month,
+				Day = tomorrow.Day,
+				PriceArea = zone
+			};
+
+
+			try
+			{
+				List<PriceEntry> tomorrowPrices = await priceService.GetElectricityPrices(tomorrowInput);
+				todaysPrices.AddRange(tomorrowPrices);
+			}
+			catch (HttpRequestException)
+			{
+				//Keep today's prices if tomorrow's prices are unavailable
+			}
+
+			DateTimeOffset endOfToday = today.AddHours(24);
+
+			List<PriceEntry> forecast = todaysPrices.Where(p => 
+				p.TimeStart >= today && p.TimeStart < endOfToday).
+				OrderBy(p => p.TimeStart).ToList();
+
+
+			return Results.Ok(new
+			{
+				address = "Current location", 
+				zone,
+				latitude,
+				longitude, 
+				generatedAt = today, 
+				forecast
+			});
+
+		});
+
+
+	}
+
+
+
+	
+
+
+
+
+
+
+
+
+	private static List<HourlyPriceSummary> AggregateHourlyPrices(
+		IReadOnlyList<PriceEntry> prices,
+		TimeSpan localOffset)
+	{
+		return prices
+			.GroupBy(price =>
+			{
+				DateTimeOffset localStart = price.TimeStart.ToOffset(localOffset);
+				return new DateTime(
+					localStart.Year,
+					localStart.Month,
+					localStart.Day,
+					localStart.Hour,
+					0,
+					0,
+					DateTimeKind.Unspecified);
+			})
+			.Select(hour =>
+			{
+				DateTimeOffset hourStart = new(hour.Key, localOffset);
+
+				return new HourlyPriceSummary
+				{
+					TimeStart = hourStart,
+					TimeEnd = hourStart.AddHours(1),
+					SekPerkWh = Math.Round(
+						hour.Average(price => price.SekPerkWh),
+						2,
+						MidpointRounding.AwayFromZero)
+				};
+			})
+			.OrderBy(hour => hour.TimeStart)
+			.ToList();
 	}
 
 	private static PriceEntry? FindCurrentPrice(
