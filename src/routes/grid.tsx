@@ -23,6 +23,10 @@ type AddressSearchResponse = {
   error?: string
 }
 
+type ReverseLocationResponse = {
+  address?: string
+}
+
 type EnergyResponse = {
   zone?: string
   price?: {
@@ -75,6 +79,12 @@ function Grid() {
   const [isLoadingEnergy, setIsLoadingEnergy] = useState(false)
   const [error, setError] = useState('')
   const [energyError, setEnergyError] = useState('')
+  const [locationError, setLocationError] = useState('')
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false)
+  const [currentCoordinates, setCurrentCoordinates] = useState<{
+    latitude: number
+    longitude: number
+  } | null>(null)
   const [forecast, setForecast] = useState<ForecastEntry[]>([])
   const [isLoadingForecast, setIsLoadingForecast] = useState(false)
   const [forecastError, setForecastError] = useState('')
@@ -93,9 +103,11 @@ function Grid() {
     const trimmedQuery = query.trim()
 
     setSelectedAddress(null)
+    setCurrentCoordinates(null)
     setEnergy(null)
     setError('')
     setEnergyError('')
+    setLocationError('')
 
     if (trimmedQuery.length < 3) {
       setSuggestions([])
@@ -151,7 +163,13 @@ function Grid() {
 
   useEffect(() => {
     const address = selectedAddress?.properties?.formatted
-    if (typeof address !== 'string' || !address.trim()) {
+    if (
+      (!currentCoordinates &&
+        (typeof address !== 'string' || !address.trim())) ||
+      (currentCoordinates &&
+        (!Number.isFinite(currentCoordinates.latitude) ||
+          !Number.isFinite(currentCoordinates.longitude)))
+    ) {
       setForecast([])
       setForecastError('')
       setIsLoadingForecast(false)
@@ -168,11 +186,10 @@ function Grid() {
       setCarbonForecastError('')
 
       try {
-        const encodedAddress = encodeURIComponent(String(address))
-        const response = await fetch(
-          `${energyApiUrl}/api/price-forecast?address=${encodedAddress}`,
-          { signal: controller.signal }
-        )
+        const endpoint = currentCoordinates
+          ? `${energyApiUrl}/api/price-forecast/location?latitude=${currentCoordinates.latitude}&longitude=${currentCoordinates.longitude}`
+          : `${energyApiUrl}/api/price-forecast?address=${encodeURIComponent(String(address))}`
+        const response = await fetch(endpoint, { signal: controller.signal })
 
         if (!response.ok) {
           throw new Error('Could not load the price forecast.')
@@ -219,7 +236,7 @@ function Grid() {
     }
     void loadForecast()
     return () => controller.abort()
-  }, [selectedAddress])
+  }, [selectedAddress, currentCoordinates])
 
   const recommendation = findRecommendation(
     forecast,
@@ -248,6 +265,7 @@ function Grid() {
     }
 
     setQuery(formattedAddress)
+    setCurrentCoordinates(null)
     setSelectedAddress(address)
     setSuggestions([])
     setEnergy(null)
@@ -271,6 +289,89 @@ function Grid() {
         'Could not load the electricity price for this address. Is the backend running?',
       )
     } finally {
+      setIsLoadingEnergy(false)
+    }
+  }
+
+  async function useCurrentLocation() {
+    if (!navigator.geolocation) {
+      setLocationError('Your browser does not support location services.')
+      return
+    }
+
+    setIsLoadingLocation(true)
+    setLocationError('')
+    setEnergyError('')
+    setEnergy(null)
+    setSelectedAddress(null)
+    setSuggestions([])
+
+    try {
+      const position = await new Promise<GeolocationPosition>(
+        (resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 300000,
+          })
+        },
+      )
+      const { latitude, longitude } = position.coords
+      const coordinates = { latitude, longitude }
+
+      setCurrentCoordinates(coordinates)
+      setSelectedAddress({
+        properties: { formatted: 'Current location', lat: latitude, lon: longitude },
+      })
+      setIsLoadingEnergy(true)
+
+      const [locationResponse, reverseResponse] = await Promise.all([
+        fetch(
+          `${energyApiUrl}/api/current-energy/location?latitude=${latitude}&longitude=${longitude}`,
+        ),
+        fetch(
+          `${energyApiUrl}/search/reverse?latitude=${latitude}&longitude=${longitude}`,
+        ),
+      ])
+      const data = (await locationResponse.json()) as EnergyResponse
+
+      if (!locationResponse.ok) {
+        throw new Error(data.error ?? 'Could not load electricity price.')
+      }
+
+      setEnergy(data)
+
+      if (reverseResponse.ok) {
+        const reverseData =
+          (await reverseResponse.json()) as ReverseLocationResponse
+        const address = reverseData.address?.trim()
+
+        if (address) {
+          setSelectedAddress({
+            properties: { formatted: address, lat: latitude, lon: longitude },
+          })
+        }
+      }
+    } catch (requestError) {
+      if (
+        typeof requestError === 'object' &&
+        requestError !== null &&
+        'code' in requestError &&
+        typeof requestError.code === 'number'
+      ) {
+        setLocationError(
+          requestError.code === GeolocationPositionError.PERMISSION_DENIED
+            ? 'Location permission was denied. Allow location access and try again.'
+            : 'Could not determine your current location. Try again.',
+        )
+      } else {
+        console.error(requestError)
+        setEnergyError(
+          'Could not load the electricity price for your current location. Is the backend running?',
+        )
+      }
+    } finally {
+      setIsLoadingLocation(false)
       setIsLoadingEnergy(false)
     }
   }
@@ -305,22 +406,33 @@ function Grid() {
         </h1>
 
         <div className="relative w-full max-w-xl text-left">
-          <label>
-            <span className="sr-only">Your address</span>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <label className="min-w-0 flex-1">
+              <span className="sr-only">Your address</span>
 
-            <input
-              type="text"
-              name="address"
-              value={query}
-              placeholder="Write your address"
-              aria-label="Write your address"
-              aria-autocomplete="list"
-              aria-controls="address-suggestions"
-              aria-expanded={suggestions.length > 0}
-              onChange={(event) => setQuery(event.target.value)}
-              className="h-16 w-full rounded-2xl border-2 border-white bg-white px-6 text-base text-[var(--sea-ink)] shadow-[0_14px_35px_rgba(0,0,0,0.14)] outline-none placeholder:text-[var(--sea-ink-soft)] focus:border-cyan-300 focus:ring-4 focus:ring-cyan-200/40"
-            />
-          </label>
+              <input
+                type="text"
+                name="address"
+                value={query}
+                placeholder="Write your address"
+                aria-label="Write your address"
+                aria-autocomplete="list"
+                aria-controls="address-suggestions"
+                aria-expanded={suggestions.length > 0}
+                onChange={(event) => setQuery(event.target.value)}
+                className="h-16 w-full rounded-2xl border-2 border-white bg-white px-6 text-base text-[var(--sea-ink)] shadow-[0_14px_35px_rgba(0,0,0,0.14)] outline-none placeholder:text-[var(--sea-ink-soft)] focus:border-cyan-300 focus:ring-4 focus:ring-cyan-200/40"
+              />
+            </label>
+
+            <button
+              type="button"
+              onClick={() => void useCurrentLocation()}
+              disabled={isLoadingLocation}
+              className="h-16 shrink-0 rounded-2xl border-2 border-cyan-300 bg-cyan-400 px-5 text-sm font-bold text-black shadow-[0_14px_35px_rgba(0,0,0,0.14)] transition hover:bg-cyan-300 disabled:cursor-wait disabled:opacity-70"
+            >
+              {isLoadingLocation ? 'Finding location...' : 'Use current location'}
+            </button>
+          </div>
 
           {(isLoading || suggestions.length > 0 || error) && (
             <div
@@ -360,6 +472,12 @@ function Grid() {
             </div>
           )}
         </div>
+
+        {locationError && (
+          <p className="mt-4 max-w-xl text-sm text-red-200" role="alert">
+            {locationError}
+          </p>
+        )}
 
         {selectedAddress?.properties?.formatted && (
           <p className="mt-4 max-w-xl text-sm text-white">

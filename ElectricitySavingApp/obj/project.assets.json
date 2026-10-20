@@ -143,24 +143,25 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\fredz\\.nuget\\packages\\": {}
+    "/Users/isabelljohansson/.nuget/packages/": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\fredz\\Documents\\Chalmers\\Agile Project Management\\Project\\Agil-project-\\ElectricitySavingApp\\ElectricitySavingApp.csproj",
+      "projectUniqueName": "/Users/isabelljohansson/Agile_project/ElectricitySavingApp/ElectricitySavingApp.csproj",
       "projectName": "ElectricitySavingApp",
-      "projectPath": "C:\\Users\\fredz\\Documents\\Chalmers\\Agile Project Management\\Project\\Agil-project-\\ElectricitySavingApp\\ElectricitySavingApp.csproj",
-      "packagesPath": "C:\\Users\\fredz\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\fredz\\Documents\\Chalmers\\Agile Project Management\\Project\\Agil-project-\\ElectricitySavingApp\\obj\\",
+      "projectPath": "/Users/isabelljohansson/Agile_project/ElectricitySavingApp/ElectricitySavingApp.csproj",
+      "packagesPath": "/Users/isabelljohansson/.nuget/packages/",
+      "outputPath": "/Users/isabelljohansson/Agile_project/ElectricitySavingApp/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\fredz\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "/Users/isabelljohansson/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net10.0"
       ],
       "sources": {
+        "/opt/homebrew/Cellar/dotnet/10.0.401_1/libexec/library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -215,7 +216,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "/opt/homebrew/Cellar/dotnet/10.0.401_1/libexec/sdk/10.0.401/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.AspNetCore": "(,10.0.32767]",
           "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",
