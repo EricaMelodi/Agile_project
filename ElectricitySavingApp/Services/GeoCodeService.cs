@@ -48,4 +48,36 @@ public class GeoCodeService : IGeoCodeService
             
     }
 
+    public async Task<string?> GetAddressFromCoordinates(
+        double latitude,
+        double longitude)
+    {
+        if (!double.IsFinite(latitude) || !double.IsFinite(longitude) ||
+            latitude < -90 || latitude > 90 ||
+            longitude < -180 || longitude > 180)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(latitude),
+                "Coordinates are not valid.");
+        }
+
+        string? apiKey = httpClient.DefaultRequestHeaders
+            .GetValues("auth-token")
+            .FirstOrDefault();
+        string apiRequestUrl =
+            $"reverse?lat={latitude.ToString(System.Globalization.CultureInfo.InvariantCulture)}" +
+            $"&lon={longitude.ToString(System.Globalization.CultureInfo.InvariantCulture)}" +
+            $"&api_key={apiKey}";
+
+        ReverseGeoResponse? response =
+            await httpClient.GetFromJsonAsync<ReverseGeoResponse>(apiRequestUrl);
+
+        return response?.DisplayName;
+    }
+
+    private sealed class ReverseGeoResponse
+    {
+        public string? DisplayName { get; set; }
+    }
+
 }

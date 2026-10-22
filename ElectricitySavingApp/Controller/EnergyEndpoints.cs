@@ -77,9 +77,11 @@ public static class EnergyEndpoints
 			List<HourlyPriceSummary> hourlyPrices = AggregateHourlyPrices(
 				prices,
 				localTimeNow.Offset);
+
 			HourlyPriceSummary? cheapestHour = hourlyPrices
 				.OrderBy(hour => hour.SekPerkWh)
 				.FirstOrDefault();
+				
 			HourlyPriceSummary? mostExpensiveHour = hourlyPrices
 				.OrderByDescending(hour => hour.SekPerkWh)
 				.FirstOrDefault();

@@ -50,6 +50,27 @@ public static class GeoLocationEndpoints
                 zone
             });
         });
+
+        app.MapGet("/search/reverse", async (
+            double latitude,
+            double longitude,
+            IGeoCodeService geoService) =>
+        {
+            if (!double.IsFinite(latitude) || !double.IsFinite(longitude) ||
+                latitude < -90 || latitude > 90 ||
+                longitude < -180 || longitude > 180)
+            {
+                return Results.BadRequest("Coordinates are not valid.");
+            }
+
+            string? address = await geoService.GetAddressFromCoordinates(
+                latitude,
+                longitude);
+
+            return address is not null
+                ? Results.Ok(new { address })
+                : Results.NotFound("Location name was not found.");
+        });
     }
 
 }
