@@ -1,6 +1,7 @@
 
 using ElectricitySavingApp.Services;
 using ElectricitySavingApp.Controller;
+using ElectricitySavingApp.Middleware;
 
 // Create the ASP.NET Core application builder. The builder collects
 // configuration and service registrations before the web server starts.
@@ -78,7 +79,10 @@ builder.Services.AddScoped<ICarbonIntensityService>(
 				HttpClient httpClient =
 					services.GetRequiredService<IHttpClientFactory>().CreateClient("electricityMaps");
 				
-				return new CarbonIntensityService(httpClient, apiKey);
+				return new CarbonIntensityService(
+					httpClient,
+					apiKey
+				);
 
 			}
 		);
@@ -112,6 +116,9 @@ WebApplication app = builder.Build();
 
 // Apply the frontend CORS policy before handling requests.
 app.UseCors("frontend");
+
+// Convert unhandled exceptions into consistent HTTP problem responses.
+app.UseMiddleware<ErrorHandlingMiddleware>();
 
 // Register the grouped endpoint definitions with the web application.
 app.MapPriceEndpoints();

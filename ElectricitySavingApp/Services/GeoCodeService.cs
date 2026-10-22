@@ -1,6 +1,7 @@
 namespace ElectricitySavingApp.Services;
 
 using System.Net.Http.Json;
+using System.Text.Json;
 using ElectricitySavingApp.Model; 
 
 public class GeoCodeService : IGeoCodeService
@@ -21,6 +22,7 @@ public class GeoCodeService : IGeoCodeService
 
     }
 
+
     public async Task<GeoEntry?> GetGeoData(string? address)
     {
 
@@ -37,12 +39,12 @@ public class GeoCodeService : IGeoCodeService
         string apiRequestUrl = 
             $"search?q={encodedAddress}&api_key={apiKey}";
 
-            // The first result is used as the best match for the user's address.
-            List<GeoEntry>? locationResult = 
-                await httpClient.GetFromJsonAsync<List<GeoEntry>>(apiRequestUrl);
+    
+                // The first result is used as the best match for the user's address.
+                List<GeoEntry>? locationResult = 
+                    await httpClient.GetFromJsonAsync<List<GeoEntry>>(apiRequestUrl);
 
-
-            return locationResult?.FirstOrDefault();
+                return locationResult?.FirstOrDefault();
             
     }
 

@@ -1,0 +1,16 @@
+$kind: http-request
+method: GET
+url: 'http://localhost:5000/api/current-energy?badAddress=Felvägen%20567%2C%20Postby'
+order: 3000
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Returns the observed client error", function () {
+        pm.response.to.have.status(400);
+      });
+
+      pm.test("Error payload matches observed empty response", function () {
+        pm.expect(pm.response.text()).to.equal("");
+        pm.expect(pm.response.headers.get("Content-Length")).to.equal("0");
+      });

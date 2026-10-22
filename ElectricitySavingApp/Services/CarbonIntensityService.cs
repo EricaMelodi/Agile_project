@@ -1,5 +1,6 @@
 namespace ElectricitySavingApp.Services;
 
+using System.Text.Json;
 using ElectricitySavingApp.Model;
 
 // Retrieves current carbon intensity from Electricity Maps API.
@@ -24,11 +25,26 @@ public class CarbonIntensityService : ICarbonIntensityService
         // Build the provider URL and safely encode the zone query value.
         string apiRequestUrl =
             $"v4/carbon-intensity/latest?zone=SE-{Uri.EscapeDataString(priceArea)}";
+        try {
 
-        // Deserialize the provider response into the application's carbon model.
-        CarbonIntensityEntry? carbonIntensityResult = await httpClient.GetFromJsonAsync<CarbonIntensityEntry>(apiRequestUrl);
+            // Deserialize the provider response into the application's carbon model.
+            CarbonIntensityEntry? carbonIntensityResult = await httpClient.GetFromJsonAsync<CarbonIntensityEntry>(apiRequestUrl);
 
-        return carbonIntensityResult;
+            return carbonIntensityResult;
+
+        } 
+        catch (HttpRequestException)
+        {   //Carbon intensity is unavailable; continue without carbon data.
+            return null;
+        }
+        catch (JsonException)
+        {   //Provider returned invalid response; continue without carbon data.
+            return null;
+        }
+        catch (TaskCanceledException)
+        {   //Request timeout; continue without carbon data.
+            return null;
+        }
     }
 
     public async Task<CarbonIntensityForecast?> GetCarbonIntensityForecast(string priceArea)

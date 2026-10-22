@@ -1,0 +1,53 @@
+$kind: http-request
+method: GET
+url: 'http://localhost:5000/api/current-energy?address2=Göteborg'
+order: 2000
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("HTTP status is 200", function () {
+        pm.response.to.have.status(200);
+      });
+
+      pm.test("Response is JSON", function () {
+        pm.expect(pm.response.headers.get("Content-Type")).to.include("application/json");
+        pm.response.json();
+      });
+
+      const json = pm.response.json();
+      const requiredFields = [
+        "address",
+        "zone",
+        "localTime",
+        "price",
+        "cheapestHour",
+        "mostExpensiveHour",
+        "estimatedSavingPerUse",
+        "assumedConsumptionKWh",
+        "carbonIntensity"
+      ];
+
+      pm.test("Required top-level fields are present", function () {
+        requiredFields.forEach(function (field) {
+          pm.expect(json).to.have.property(field);
+        });
+      });
+
+      pm.test("Energy prices are numeric", function () {
+        pm.expect(json.price.SEK_per_kWh).to.be.a("number");
+        pm.expect(json.cheapestHour.sekPerkWh).to.be.a("number");
+        pm.expect(json.mostExpensiveHour.sekPerkWh).to.be.a("number");
+      });
+
+      pm.test("Cheapest price is not greater than most expensive price", function () {
+        pm.expect(json.cheapestHour.sekPerkWh).to.be.at.most(json.mostExpensiveHour.sekPerkWh);
+      });
+
+      pm.test("Carbon intensity is numeric", function () {
+        pm.expect(json.carbonIntensity.carbonIntensity).to.be.a("number");
+      });
+
+      pm.test("Response time is below 2000 ms", function () {
+        pm.expect(pm.response.responseTime).to.be.below(2000);
+      });
